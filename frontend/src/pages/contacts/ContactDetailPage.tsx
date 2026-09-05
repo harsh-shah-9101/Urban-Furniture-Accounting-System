@@ -26,7 +26,7 @@ export function ContactDetailPage() {
 
   return (
     <div>
-      <PageHeader title={contact.name} />
+      <PageHeader title={contact.name} backTo="/contacts" />
       <Card className="max-w-lg">
         <CardContent className="flex flex-col gap-3">
           <Badge variant="secondary" className="w-fit">

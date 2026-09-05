@@ -14,7 +14,7 @@ export function ProductFormPage() {
 
   return (
     <div>
-      <PageHeader title="New Product" />
+      <PageHeader title="New Product" backTo="/products" />
       <ProductForm onSubmit={handleSubmit} isSubmitting={createProduct.isPending} />
     </div>
   )

@@ -18,6 +18,7 @@ interface NavItem {
   to: string
   label: string
   icon: typeof LayoutDashboard
+  end?: boolean
 }
 
 interface NavGroup {
@@ -66,7 +67,7 @@ export function Sidebar() {
       label: 'Budgets',
       items: [
         { to: '/budgets/analytic-accounts', label: 'Analytic Accounts', icon: PiggyBank },
-        { to: '/budgets', label: 'Budgets', icon: PiggyBank },
+        { to: '/budgets', label: 'Budgets', icon: PiggyBank, end: true },
       ],
     },
     { label: '', items: [{ to: '/reports', label: 'Reports', icon: BarChart3 }] },
@@ -85,6 +86,7 @@ export function Sidebar() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',

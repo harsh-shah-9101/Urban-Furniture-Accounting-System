@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, '')
 
 export class ApiError extends Error {
   status: number
@@ -33,6 +33,14 @@ function extractErrorMessage(body: unknown, fallback: string): string {
 /** Builds the `x-user-role` header the backend uses to authorize list/write endpoints. */
 export function roleHeaders(role?: string): Record<string, string> | undefined {
   return role ? { 'x-user-role': role } : undefined
+}
+
+/** Builds the headers the customer-portal endpoints use to scope results to one customer. */
+export function portalHeaders(role?: string, email?: string): Record<string, string> | undefined {
+  const headers: Record<string, string> = {}
+  if (role) headers['x-user-role'] = role
+  if (email) headers['x-customer-email'] = email
+  return Object.keys(headers).length ? headers : undefined
 }
 
 async function handleResponse<TResponse>(res: Response): Promise<TResponse> {

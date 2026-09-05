@@ -4,7 +4,7 @@ import { EmptyState } from '@/components/feedback/EmptyState'
 export function PaymentFormPage() {
   return (
     <div>
-      <PageHeader title="Register Payment" />
+      <PageHeader title="Register Payment" backTo="/payments" />
       <EmptyState title="Payment form coming in Milestone 8" />
     </div>
   )

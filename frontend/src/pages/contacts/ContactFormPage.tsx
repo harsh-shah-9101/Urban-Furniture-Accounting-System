@@ -22,7 +22,7 @@ export function ContactFormPage() {
 
   return (
     <div>
-      <PageHeader title="New Contact" />
+      <PageHeader title="New Contact" backTo="/contacts" />
       <ContactForm onSubmit={handleSubmit} isSubmitting={createContact.isPending} />
     </div>
   )

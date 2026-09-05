@@ -1,10 +1,3 @@
-/** Shared by the still-mock Sales feature (types/sales.ts) — not the real Purchases API below. */
-export interface LineItem {
-  productId: string
-  quantity: number
-  unitPrice: number
-}
-
 export type PurchaseStatus = 'draft' | 'confirmed' | 'billed' | 'paid' | 'cancelled'
 
 export interface PurchaseOrderLine {

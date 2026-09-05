@@ -40,6 +40,7 @@ import { BudgetListPage } from '@/pages/budgets/BudgetListPage'
 import { BudgetFormPage } from '@/pages/budgets/BudgetFormPage'
 
 import { ReportsHomePage } from '@/pages/reports/ReportsHomePage'
+import { TrialBalancePage } from '@/pages/reports/TrialBalancePage'
 import { BalanceSheetPage } from '@/pages/reports/BalanceSheetPage'
 import { ProfitLossPage } from '@/pages/reports/ProfitLossPage'
 import { BudgetReportPage } from '@/pages/reports/BudgetReportPage'
@@ -98,6 +99,7 @@ export const router = createBrowserRouter([
           { path: 'budgets/:id', element: <BudgetFormPage /> },
 
           { path: 'reports', element: <ReportsHomePage /> },
+          { path: 'reports/trial-balance', element: <TrialBalancePage /> },
           { path: 'reports/balance-sheet', element: <BalanceSheetPage /> },
           { path: 'reports/profit-loss', element: <ProfitLossPage /> },
           { path: 'reports/budget', element: <BudgetReportPage /> },
@@ -134,4 +136,8 @@ export const router = createBrowserRouter([
   },
 
   { path: '*', element: <Navigate to="/login" replace /> },
-])
+], {
+  future: {
+    v7_relativeSplatPath: true,
+  },
+})

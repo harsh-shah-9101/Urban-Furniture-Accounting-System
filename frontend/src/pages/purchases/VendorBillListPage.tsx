@@ -15,12 +15,12 @@ export function VendorBillListPage() {
   const { data: contacts } = useContacts()
   const navigate = useNavigate()
 
-  const vendorName = (vendorId: number) => contacts?.find((c) => c.id === vendorId)?.name ?? `Vendor #${vendorId}`
+  const vendorName = (vendorId: number) => contacts?.find((c) => c.id === vendorId)?.name ?? `Vendor ${vendorId}`
 
   const columns: ColumnDef<VendorBill, unknown>[] = [
-    { id: 'id', header: 'Bill #', cell: ({ row }) => `#${row.original.id}` },
+    { id: 'id', header: 'Bill', cell: ({ row }) => `${row.original.id}` },
     { id: 'vendor', header: 'Vendor', cell: ({ row }) => vendorName(row.original.vendorId) },
-    { id: 'po', header: 'Purchase Order', cell: ({ row }) => `#${row.original.purchaseOrderId}` },
+    { id: 'po', header: 'Purchase Order', cell: ({ row }) => `${row.original.purchaseOrderId}` },
     {
       accessorKey: 'status',
       header: 'Status',

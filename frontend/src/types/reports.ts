@@ -1,40 +1,40 @@
-export interface BalanceSheetRow {
-  accountId: string
-  accountName: string
+import type { AccountType } from './accounting'
+
+export interface TrialBalanceLine {
+  accountId: number
+  code: string
+  name: string
+  accountType: AccountType
+  debit: number
+  credit: number
   balance: number
 }
 
 export interface BalanceSheet {
-  asOfDate: string
-  assets: BalanceSheetRow[]
-  liabilities: BalanceSheetRow[]
-  capital: BalanceSheetRow[]
-  totals: { assets: number; liabilities: number; capital: number }
-  isBalanced: boolean
+  assets: number
+  liabilities: number
+  capital: number
+  netProfit: number
+  difference: number
 }
 
 export interface ProfitAndLoss {
-  periodStart: string
-  periodEnd: string
-  income: BalanceSheetRow[]
-  expenses: BalanceSheetRow[]
-  totalIncome: number
-  totalExpenses: number
+  income: number
+  expense: number
   netProfit: number
 }
 
-export interface BudgetReportRow {
-  budgetId: string
-  budgetName: string
-  analyticAccountName: string
-  planned: number
-  actual: number
-  variance: number
-  variancePct: number
+export interface BudgetReportInput {
+  targetIncome?: number
+  budgetedExpense?: number
 }
 
 export interface BudgetReport {
-  periodStart: string
-  periodEnd: string
-  rows: BudgetReportRow[]
+  targetIncome: number
+  actualIncome: number
+  incomeVariance: number
+  budgetedExpense: number
+  actualExpense: number
+  expenseVariance: number
+  netProfit: number
 }

@@ -14,7 +14,7 @@ export function JournalFormPage() {
 
   return (
     <div>
-      <PageHeader title="New Journal" />
+      <PageHeader title="New Journal" backTo="/accounting/journals" />
       <JournalForm onSubmit={handleSubmit} isSubmitting={createJournal.isPending} />
     </div>
   )

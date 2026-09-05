@@ -9,16 +9,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useJournalEntries } from '@/features/journal-entries/hooks'
 import { useJournals } from '@/features/journals/hooks'
 import { useAccounts } from '@/features/accounts/hooks'
+import { useContacts } from '@/features/contacts/hooks'
 
 export function JournalEntryListPage() {
   const { data: entries, isLoading, isError } = useJournalEntries()
   const { data: journals } = useJournals()
   const { data: accounts } = useAccounts()
+  const { data: contacts } = useContacts()
 
-  const journalName = (id: number) => journals?.find((j) => j.id === id)?.name ?? `Journal #${id}`
+  const journalName = (id: number) => journals?.find((j) => j.id === id)?.name ?? `Journal ${id}`
   const accountLabel = (id: number) => {
     const account = accounts?.find((a) => a.id === id)
-    return account ? `${account.code} — ${account.name}` : `Account #${id}`
+    return account ? `${account.code} — ${account.name}` : `Account ${id}`
+  }
+  const partnerLabel = (id: number | null) => {
+    if (id === null) return '—'
+    return contacts?.find((c) => c.id === id)?.name ?? `Contact ${id}`
   }
 
   return (
@@ -42,7 +48,7 @@ export function JournalEntryListPage() {
           <Card key={entry.id}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">
-                {entry.reference} — {journalName(entry.journalId)}
+                {entry.reference.replace(/#/g, '')} — {journalName(entry.journalId)}
               </CardTitle>
               <StatusBadge status={entry.status} />
             </CardHeader>
@@ -51,6 +57,7 @@ export function JournalEntryListPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Account</TableHead>
+                    <TableHead>Partner</TableHead>
                     <TableHead className="text-right">Debit</TableHead>
                     <TableHead className="text-right">Credit</TableHead>
                   </TableRow>
@@ -59,6 +66,7 @@ export function JournalEntryListPage() {
                   {entry.lines.map((line) => (
                     <TableRow key={line.id}>
                       <TableCell>{accountLabel(line.accountId)}</TableCell>
+                      <TableCell className="text-muted-foreground">{partnerLabel(line.partnerId)}</TableCell>
                       <TableCell className="text-right">
                         {line.debit > 0 ? <CurrencyText amount={line.debit} /> : '—'}
                       </TableCell>

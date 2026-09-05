@@ -16,10 +16,10 @@ export function PurchaseOrderListPage() {
   const { data: contacts } = useContacts()
   const navigate = useNavigate()
 
-  const vendorName = (vendorId: number) => contacts?.find((c) => c.id === vendorId)?.name ?? `Vendor #${vendorId}`
+  const vendorName = (vendorId: number) => contacts?.find((c) => c.id === vendorId)?.name ?? `Vendor ${vendorId}`
 
   const columns: ColumnDef<PurchaseOrder, unknown>[] = [
-    { id: 'id', header: 'PO #', cell: ({ row }) => `#${row.original.id}` },
+    { id: 'id', header: 'PO', cell: ({ row }) => `${row.original.id}` },
     { id: 'vendor', header: 'Vendor', cell: ({ row }) => vendorName(row.original.vendorId) },
     {
       accessorKey: 'status',

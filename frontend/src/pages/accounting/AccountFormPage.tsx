@@ -14,7 +14,7 @@ export function AccountFormPage() {
 
   return (
     <div>
-      <PageHeader title="New Account" />
+      <PageHeader title="New Account" backTo="/accounting/chart-of-accounts" />
       <AccountForm onSubmit={handleSubmit} isSubmitting={createAccount.isPending} />
     </div>
   )
