@@ -24,22 +24,16 @@ services:
     build:
       context: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg://urbanbooks:urbanbooks@postgres:5432/urban_furniture_accounting
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: urban_furniture_accounting
+      POSTGRES_USER: urbanbooks
+      POSTGRES_PASSWORD: urbanbooks
       CORS_ORIGINS: http://localhost:5173
     ports:
       - "5000:5000"
     depends_on:
       - postgres
-
-  frontend:
-    build:
-      context: ./frontend
-    environment:
-      VITE_API_BASE_URL: http://localhost:5000
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
 
 volumes:
   postgres_data:

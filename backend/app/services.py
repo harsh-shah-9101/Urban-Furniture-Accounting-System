@@ -11,10 +11,14 @@ from app.models import (
     BillStatus,
     Contact,
     ContactType,
+    CustomerInvoice,
+    CustomerInvoiceLine,
+    CustomerPayment,
     Journal,
     JournalType,
     JournalEntry,
     JournalEntryLine,
+    InvoiceStatus,
     Payment,
     PaymentMethod,
     Product,
@@ -22,12 +26,15 @@ from app.models import (
     PurchaseOrder,
     PurchaseOrderLine,
     PurchaseStatus,
+    SalesOrder,
+    SalesOrderLine,
+    SalesStatus,
     User,
     UserRole,
     VendorBill,
     VendorBillLine,
 )
-from app.schemas import AccountCreate, ContactCreate, JournalCreate, PaymentCreate, ProductCreate, PurchaseOrderCreate, SignupIn
+from app.schemas import AccountCreate, ContactCreate, JournalCreate, PaymentCreate, ProductCreate, PurchaseOrderCreate, SalesOrderCreate, SignupIn
 
 
 def hash_password(password: str) -> str:
@@ -125,6 +132,15 @@ def _validate_vendor(db: Session, vendor_id: int) -> Contact:
     if vendor.contact_type not in {ContactType.vendor, ContactType.both}:
         raise HTTPException(status_code=400, detail="Contact must be a vendor")
     return vendor
+
+
+def _validate_customer(db: Session, customer_id: int) -> Contact:
+    customer = db.get(Contact, customer_id)
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    if customer.contact_type not in {ContactType.customer, ContactType.both}:
+        raise HTTPException(status_code=400, detail="Contact must be a customer")
+    return customer
 
 
 def create_purchase_order(db: Session, payload: PurchaseOrderCreate) -> PurchaseOrder:
@@ -257,6 +273,167 @@ def pay_vendor_bill(db: Session, bill_id: int, payload: PaymentCreate) -> Paymen
     db.commit()
     db.refresh(payment)
     return payment
+
+
+def create_sales_order(db: Session, payload: SalesOrderCreate) -> SalesOrder:
+    _validate_customer(db, payload.customer_id)
+    order = SalesOrder(customer_id=payload.customer_id, notes=payload.notes, total_amount=0)
+    for line in payload.lines:
+        product = db.get(Product, line.product_id)
+        if product is None:
+            raise HTTPException(status_code=404, detail=f"Product {line.product_id} not found")
+        line_total = line.quantity * line.unit_price
+        order.total_amount += line_total
+        order.lines.append(
+            SalesOrderLine(
+                product_id=line.product_id,
+                quantity=line.quantity,
+                unit_price=line.unit_price,
+                line_total=line_total,
+            )
+        )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+def confirm_sales_order(db: Session, order_id: int) -> SalesOrder:
+    order = db.get(SalesOrder, order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Sales order not found")
+    if order.status != SalesStatus.draft:
+        raise HTTPException(status_code=400, detail="Only draft sales orders can be confirmed")
+    order.status = SalesStatus.confirmed
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+def create_customer_invoice_from_so(db: Session, order_id: int) -> CustomerInvoice:
+    order = db.get(SalesOrder, order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Sales order not found")
+    if order.status not in {SalesStatus.confirmed, SalesStatus.invoiced}:
+        raise HTTPException(status_code=400, detail="Sales order must be confirmed before invoice creation")
+    existing = db.scalar(select(CustomerInvoice).where(CustomerInvoice.sales_order_id == order.id))
+    if existing:
+        return existing
+
+    invoice = CustomerInvoice(sales_order_id=order.id, customer_id=order.customer_id, total_amount=order.total_amount)
+    for line in order.lines:
+        invoice.lines.append(
+            CustomerInvoiceLine(
+                product_id=line.product_id,
+                quantity=line.quantity,
+                unit_price=line.unit_price,
+                line_total=line.line_total,
+            )
+        )
+    order.status = SalesStatus.invoiced
+    db.add(invoice)
+    db.commit()
+    db.refresh(invoice)
+    return invoice
+
+
+def post_customer_invoice(db: Session, invoice_id: int) -> CustomerInvoice:
+    invoice = db.get(CustomerInvoice, invoice_id)
+    if invoice is None:
+        raise HTTPException(status_code=404, detail="Customer invoice not found")
+    if invoice.status != InvoiceStatus.draft:
+        raise HTTPException(status_code=400, detail="Only draft customer invoices can be posted")
+
+    _create_journal_entry(
+        db,
+        journal=_journal_by_type(db, JournalType.sales),
+        reference=f"Customer Invoice #{invoice.id}",
+        debit_account=_account_by_code(db, "1100"),
+        credit_account=_account_by_code(db, "4000"),
+        amount=invoice.total_amount,
+        partner_id=invoice.customer_id,
+    )
+    invoice.status = InvoiceStatus.posted
+    db.commit()
+    db.refresh(invoice)
+    return invoice
+
+
+def pay_customer_invoice(db: Session, invoice_id: int, payload: PaymentCreate) -> CustomerPayment:
+    invoice = db.get(CustomerInvoice, invoice_id)
+    if invoice is None:
+        raise HTTPException(status_code=404, detail="Customer invoice not found")
+    if invoice.status != InvoiceStatus.posted:
+        raise HTTPException(status_code=400, detail="Only posted customer invoices can be paid")
+
+    amount = payload.amount or invoice.total_amount
+    payment = CustomerPayment(
+        customer_invoice_id=invoice.id,
+        amount=amount,
+        method=payload.method,
+        reference=payload.reference,
+    )
+    cash_or_bank_code = "1000" if payload.method == PaymentMethod.cash else "1010"
+    journal_type = JournalType.cash if payload.method == PaymentMethod.cash else JournalType.bank
+    _create_journal_entry(
+        db,
+        journal=_journal_by_type(db, journal_type),
+        reference=f"Payment for Customer Invoice #{invoice.id}",
+        debit_account=_account_by_code(db, cash_or_bank_code),
+        credit_account=_account_by_code(db, "1100"),
+        amount=amount,
+        partner_id=invoice.customer_id,
+    )
+    invoice.status = InvoiceStatus.paid
+    invoice.sales_order.status = SalesStatus.paid
+    db.add(payment)
+    db.commit()
+    db.refresh(payment)
+    return payment
+
+
+def trial_balance(db: Session) -> list[dict]:
+    rows = []
+    accounts = db.scalars(select(Account).order_by(Account.code)).all()
+    for account in accounts:
+        lines = db.scalars(select(JournalEntryLine).where(JournalEntryLine.account_id == account.id)).all()
+        debit = sum(line.debit for line in lines)
+        credit = sum(line.credit for line in lines)
+        rows.append(
+            {
+                "account_id": account.id,
+                "code": account.code,
+                "name": account.name,
+                "account_type": account.account_type,
+                "debit": debit,
+                "credit": credit,
+                "balance": debit - credit,
+            }
+        )
+    return rows
+
+
+def profit_and_loss(db: Session) -> dict:
+    rows = trial_balance(db)
+    income = sum(abs(row["balance"]) for row in rows if row["account_type"] == AccountType.income)
+    expense = sum(row["balance"] for row in rows if row["account_type"] == AccountType.expense)
+    return {"income": income, "expense": expense, "net_profit": income - expense}
+
+
+def balance_sheet(db: Session) -> dict:
+    rows = trial_balance(db)
+    pl = profit_and_loss(db)
+    assets = sum(row["balance"] for row in rows if row["account_type"] == AccountType.asset)
+    liabilities = sum(abs(row["balance"]) for row in rows if row["account_type"] == AccountType.liability)
+    capital = sum(abs(row["balance"]) for row in rows if row["account_type"] == AccountType.capital)
+    right_side = liabilities + capital + pl["net_profit"]
+    return {
+        "assets": assets,
+        "liabilities": liabilities,
+        "capital": capital,
+        "net_profit": pl["net_profit"],
+        "difference": assets - right_side,
+    }
 
 
 def seed(db: Session) -> None:

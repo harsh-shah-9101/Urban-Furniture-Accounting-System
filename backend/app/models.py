@@ -57,6 +57,21 @@ class BillStatus(str, Enum):
     cancelled = "cancelled"
 
 
+class SalesStatus(str, Enum):
+    draft = "draft"
+    confirmed = "confirmed"
+    invoiced = "invoiced"
+    paid = "paid"
+    cancelled = "cancelled"
+
+
+class InvoiceStatus(str, Enum):
+    draft = "draft"
+    posted = "posted"
+    paid = "paid"
+    cancelled = "cancelled"
+
+
 class PaymentMethod(str, Enum):
     cash = "cash"
     bank = "bank"
@@ -194,6 +209,78 @@ class Payment(Base):
     reference: Mapped[str | None] = mapped_column(String(120))
 
     vendor_bill: Mapped[VendorBill] = relationship()
+
+
+class SalesOrder(Base):
+    __tablename__ = "sales_orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"), nullable=False)
+    order_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    status: Mapped[SalesStatus] = mapped_column(SAEnum(SalesStatus), default=SalesStatus.draft, nullable=False)
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    customer: Mapped[Contact] = relationship()
+    lines: Mapped[list["SalesOrderLine"]] = relationship(back_populates="sales_order", cascade="all, delete-orphan")
+
+
+class SalesOrderLine(Base):
+    __tablename__ = "sales_order_lines"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sales_order_id: Mapped[int] = mapped_column(ForeignKey("sales_orders.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(nullable=False)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    line_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+
+    sales_order: Mapped[SalesOrder] = relationship(back_populates="lines")
+    product: Mapped[Product] = relationship()
+
+
+class CustomerInvoice(Base):
+    __tablename__ = "customer_invoices"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sales_order_id: Mapped[int] = mapped_column(ForeignKey("sales_orders.id"), nullable=False)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("contacts.id"), nullable=False)
+    invoice_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    status: Mapped[InvoiceStatus] = mapped_column(SAEnum(InvoiceStatus), default=InvoiceStatus.draft, nullable=False)
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    sales_order: Mapped[SalesOrder] = relationship()
+    customer: Mapped[Contact] = relationship()
+    lines: Mapped[list["CustomerInvoiceLine"]] = relationship(back_populates="customer_invoice", cascade="all, delete-orphan")
+
+
+class CustomerInvoiceLine(Base):
+    __tablename__ = "customer_invoice_lines"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_invoice_id: Mapped[int] = mapped_column(ForeignKey("customer_invoices.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(nullable=False)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    line_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+
+    customer_invoice: Mapped[CustomerInvoice] = relationship(back_populates="lines")
+    product: Mapped[Product] = relationship()
+
+
+class CustomerPayment(Base):
+    __tablename__ = "customer_payments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_invoice_id: Mapped[int] = mapped_column(ForeignKey("customer_invoices.id"), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    method: Mapped[PaymentMethod] = mapped_column(SAEnum(PaymentMethod), nullable=False)
+    payment_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    reference: Mapped[str | None] = mapped_column(String(120))
+
+    customer_invoice: Mapped[CustomerInvoice] = relationship()
 
 
 class JournalEntry(Base):

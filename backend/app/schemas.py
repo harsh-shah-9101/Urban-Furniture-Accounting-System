@@ -3,7 +3,18 @@ from decimal import Decimal
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
-from app.models import AccountType, BillStatus, ContactType, JournalType, PaymentMethod, ProductType, PurchaseStatus, UserRole
+from app.models import (
+    AccountType,
+    BillStatus,
+    ContactType,
+    InvoiceStatus,
+    JournalType,
+    PaymentMethod,
+    ProductType,
+    PurchaseStatus,
+    SalesStatus,
+    UserRole,
+)
 
 
 class SignupIn(BaseModel):
@@ -177,6 +188,70 @@ class PaymentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SalesOrderLineCreate(BaseModel):
+    product_id: int
+    quantity: int = Field(gt=0)
+    unit_price: Decimal = Field(ge=0)
+
+
+class SalesOrderCreate(BaseModel):
+    customer_id: int
+    notes: str | None = None
+    lines: list[SalesOrderLineCreate] = Field(min_length=1)
+
+
+class SalesOrderLineOut(BaseModel):
+    id: int
+    product_id: int
+    quantity: int
+    unit_price: Decimal
+    line_total: Decimal
+
+    model_config = {"from_attributes": True}
+
+
+class SalesOrderOut(BaseModel):
+    id: int
+    customer_id: int
+    status: SalesStatus
+    total_amount: Decimal
+    notes: str | None
+    lines: list[SalesOrderLineOut]
+
+    model_config = {"from_attributes": True}
+
+
+class CustomerInvoiceLineOut(BaseModel):
+    id: int
+    product_id: int
+    quantity: int
+    unit_price: Decimal
+    line_total: Decimal
+
+    model_config = {"from_attributes": True}
+
+
+class CustomerInvoiceOut(BaseModel):
+    id: int
+    sales_order_id: int
+    customer_id: int
+    status: InvoiceStatus
+    total_amount: Decimal
+    lines: list[CustomerInvoiceLineOut]
+
+    model_config = {"from_attributes": True}
+
+
+class CustomerPaymentOut(BaseModel):
+    id: int
+    customer_invoice_id: int
+    amount: Decimal
+    method: PaymentMethod
+    reference: str | None
+
+    model_config = {"from_attributes": True}
+
+
 class JournalEntryLineOut(BaseModel):
     id: int
     account_id: int
@@ -195,3 +270,37 @@ class JournalEntryOut(BaseModel):
     lines: list[JournalEntryLineOut]
 
     model_config = {"from_attributes": True}
+
+
+class TrialBalanceLineOut(BaseModel):
+    account_id: int
+    code: str
+    name: str
+    account_type: AccountType
+    debit: Decimal
+    credit: Decimal
+    balance: Decimal
+
+
+class ProfitLossOut(BaseModel):
+    income: Decimal
+    expense: Decimal
+    net_profit: Decimal
+
+
+class BalanceSheetOut(BaseModel):
+    assets: Decimal
+    liabilities: Decimal
+    capital: Decimal
+    net_profit: Decimal
+    difference: Decimal
+
+
+class BudgetReportOut(BaseModel):
+    target_income: Decimal
+    actual_income: Decimal
+    income_variance: Decimal
+    budgeted_expense: Decimal
+    actual_expense: Decimal
+    expense_variance: Decimal
+    net_profit: Decimal

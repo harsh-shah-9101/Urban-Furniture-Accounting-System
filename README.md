@@ -10,22 +10,40 @@ Full-stack hackathon app for the Urban Furniture accounting workflow.
 - Database UI: pgAdmin
 - Local orchestration: Docker Compose
 
-## First Completed Stage
+## Completed Backend Stage
 
-Stage 1 is the foundation:
+The backend now covers the main accounting workflow:
 
 - Login
 - Signup
-- Role-based redirect
-- Admin/accountant dashboard
-- Customer portal placeholder
-- Seeded contact, product, chart-of-accounts, and journal master data
+- Login by email or login ID
+- Admin/accountant/customer role checks
+- Dashboard summary
+- Contact, product, account, and journal master data
+- Purchase order -> vendor bill -> vendor bill payment
+- Sales order -> customer invoice -> customer invoice payment
+- Automatic debit/credit journal entries
+- Trial balance, profit/loss, balance sheet, and budget report
+- Customer portal invoice view
 
 ## Demo Users
 
-- Admin: `admin01` / `Admin@123`
-- Accountant: `acct01` / `Account@123`
-- Customer: `nimesh01` / `Nimesh@123`
+- Admin: `admin01` or `admin@urbanbooksapp.com` / `Admin@123`
+- Accountant: `acct01` or `accountant@urbanbooksapp.com` / `Account@123`
+- Customer: `nimesh01` or `nimesh@example.com` / `Nimesh@123`
+
+## Run Backend Locally
+
+Create `backend/.env` from `backend/.env.example`, then update it for your pgAdmin/PostgreSQL port and password.
+
+```powershell
+cd backend
+.\.venv\Scripts\uvicorn.exe app.main:app --reload --port 5000
+```
+
+API docs:
+
+- http://localhost:5000/docs
 
 ## Run With Docker
 
@@ -37,7 +55,6 @@ docker compose up --build
 
 Services:
 
-- Frontend: http://localhost:5173
 - Backend API docs: http://localhost:5000/docs
 - pgAdmin: http://localhost:5050
 - PostgreSQL: localhost:5432
@@ -63,3 +80,14 @@ PostgreSQL connection inside pgAdmin:
 4. Sales order -> customer invoice -> invoice payment
 5. Journal entries with debit/credit validation
 6. Balance sheet, profit and loss, and budget report
+
+## Main API Groups
+
+- Auth: `/auth/signup`, `/auth/login`
+- Master data: `/contacts`, `/products`, `/accounts`, `/journals`
+- Purchase: `/purchase-orders`, `/purchase-orders/{id}/confirm`, `/purchase-orders/{id}/create-bill`
+- Vendor bills: `/vendor-bills`, `/vendor-bills/{id}/post`, `/vendor-bills/{id}/pay`
+- Sales: `/sales-orders`, `/sales-orders/{id}/confirm`, `/sales-orders/{id}/create-invoice`
+- Customer invoices: `/customer-invoices`, `/customer-invoices/{id}/post`, `/customer-invoices/{id}/pay`
+- Customer portal: `/customer-portal/invoices`
+- Reports: `/reports/trial-balance`, `/reports/profit-loss`, `/reports/balance-sheet`, `/reports/budget`
