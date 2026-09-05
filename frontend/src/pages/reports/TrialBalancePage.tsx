@@ -1,9 +1,8 @@
-import { PageHeader } from '@/components/layout/PageHeader'
 import { CurrencyText } from '@/components/data-display/CurrencyText'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
-import { Card, CardContent } from '@/components/ui/card'
+import { ReportLayout } from '@/components/layout/ReportLayout'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useTrialBalance } from '@/features/reports/hooks'
 
@@ -11,18 +10,17 @@ export function TrialBalancePage() {
   const { data: lines, isLoading, isError } = useTrialBalance()
 
   return (
-    <div>
-      <PageHeader title="Trial Balance" />
-
+    <ReportLayout title="Trial Balance" subtitle="For the current accounting period">
       {isLoading && <LoadingState rows={5} />}
       {isError && <ErrorState message="Failed to load trial balance." />}
       {lines && lines.length === 0 && (
-        <EmptyState title="No ledger activity yet" description="Post journal entries to see account balances here." />
+        <div className="py-12">
+          <EmptyState title="No ledger activity yet" description="Post journal entries to see account balances here." />
+        </div>
       )}
 
       {lines && lines.length > 0 && (
-        <Card>
-          <CardContent>
+        <div className="mt-4 border-t-2 border-border pt-4">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -53,9 +51,8 @@ export function TrialBalancePage() {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+        </div>
       )}
-    </div>
+    </ReportLayout>
   )
 }

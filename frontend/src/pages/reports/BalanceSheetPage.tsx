@@ -1,11 +1,10 @@
 import { useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { CurrencyText } from '@/components/data-display/CurrencyText'
 import { Badge } from '@/components/ui/badge'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { EmptyState } from '@/components/feedback/EmptyState'
+import { ReportLayout } from '@/components/layout/ReportLayout'
 import { useBalanceSheet, useTrialBalance } from '@/features/reports/hooks'
 import type { TrialBalanceLine } from '@/types/reports'
 
@@ -21,38 +20,34 @@ function BalanceSheetSection({
   total: number
 }) {
   return (
-    <Card className="flex-1">
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {lines.length === 0 && !extraLine ? (
-          <p className="text-sm text-muted-foreground">No accounts with activity.</p>
-        ) : (
-          <div className="flex flex-col">
-            {lines.map((line) => (
-              <div key={line.accountId} className="flex items-center justify-between border-b py-2 text-sm last:border-b-0">
-                <span className="text-muted-foreground">
-                  <span className="mr-2 font-mono text-xs">{line.code}</span>
-                  {line.name}
-                </span>
-                <CurrencyText amount={line.balance} className="font-medium" />
-              </div>
-            ))}
-            {extraLine && (
-              <div className="flex items-center justify-between border-b py-2 text-sm last:border-b-0">
-                <span className="text-muted-foreground italic">{extraLine.label}</span>
-                <CurrencyText amount={extraLine.amount} className="font-medium" />
-              </div>
-            )}
-          </div>
-        )}
-        <div className="mt-2 flex items-center justify-between border-t pt-3 text-base font-semibold">
-          <span>Total {title}</span>
-          <CurrencyText amount={total} />
+    <div className="mb-8 last:mb-0">
+      <h3 className="border-b-2 border-border pb-2 text-lg font-bold uppercase tracking-wide">{title}</h3>
+      {lines.length === 0 && !extraLine ? (
+        <p className="py-4 text-sm text-muted-foreground italic">No accounts with activity.</p>
+      ) : (
+        <div className="flex flex-col py-2">
+          {lines.map((line) => (
+            <div key={line.accountId} className="flex items-center justify-between py-1.5 text-sm">
+              <span>
+                <span className="mr-3 font-mono text-xs text-muted-foreground">{line.code}</span>
+                {line.name}
+              </span>
+              <CurrencyText amount={line.balance} />
+            </div>
+          ))}
+          {extraLine && (
+            <div className="flex items-center justify-between py-1.5 text-sm">
+              <span className="italic text-muted-foreground">{extraLine.label}</span>
+              <CurrencyText amount={extraLine.amount} />
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+      <div className="mt-2 flex items-center justify-between border-t border-border pt-2 font-semibold">
+        <span>Total {title}</span>
+        <CurrencyText amount={total} />
+      </div>
+    </div>
   )
 }
 
@@ -75,57 +70,35 @@ export function BalanceSheetPage() {
     return { assets, liabilities, capital }
   }, [lines])
 
-  const cards = summary
-    ? [
-        { label: 'Assets', value: summary.assets },
-        { label: 'Liabilities', value: summary.liabilities },
-        { label: 'Capital', value: summary.capital },
-        { label: 'Net Profit', value: summary.netProfit },
-      ]
-    : []
-
   return (
-    <div>
-      <PageHeader title="Balance Sheet" />
-
+    <ReportLayout title="Balance Sheet" subtitle="As of today">
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load balance sheet." />}
 
       {summary && lines && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {cards.map((card) => (
-              <Card key={card.label}>
-                <CardHeader>
-                  <CardTitle className="text-base">{card.label}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-semibold">
-                  <CurrencyText amount={card.value} />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="mt-4">
+          <div className="mb-8 text-right">
             {Math.abs(summary.difference) < 0.01 ? (
-              <Badge variant="outline" className="border-transparent bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300">
+              <Badge variant="outline" className="border-emerald-200 bg-emerald-100 text-emerald-700 print:border-black print:bg-transparent print:text-black">
                 Balanced
               </Badge>
             ) : (
-              <Badge variant="outline" className="border-transparent bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+              <Badge variant="outline" className="border-red-200 bg-red-100 text-red-700 print:border-black print:bg-transparent print:text-black">
                 Out of balance by <CurrencyText amount={summary.difference} className="ml-1" />
               </Badge>
             )}
           </div>
 
           {lines.length === 0 ? (
-            <div className="mt-4">
+            <div className="py-12">
               <EmptyState title="No ledger activity yet" description="Post journal entries to see the detailed balance sheet here." />
             </div>
           ) : (
-            <div className="mt-6 flex flex-col gap-4 lg:flex-row">
-              <BalanceSheetSection title="Assets" lines={grouped.assets} total={summary.assets} />
-              <div className="flex flex-1 flex-col gap-4">
+            <div className="mx-auto flex max-w-4xl flex-col gap-12 lg:flex-row">
+              <div className="flex-1">
+                <BalanceSheetSection title="Assets" lines={grouped.assets} total={summary.assets} />
+              </div>
+              <div className="flex-1 flex flex-col gap-12">
                 <BalanceSheetSection title="Liabilities" lines={grouped.liabilities} total={summary.liabilities} />
                 <BalanceSheetSection
                   title="Capital & Equity"
@@ -138,6 +111,6 @@ export function BalanceSheetPage() {
           )}
         </>
       )}
-    </div>
+    </ReportLayout>
   )
 }

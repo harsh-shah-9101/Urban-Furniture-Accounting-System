@@ -12,8 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form } from '@/components/ui/form'
 import { FormField } from '@/components/forms/FormField'
 import { DocumentView } from '@/components/data-display/DocumentView'
-import { Form } from '@/components/ui/form'
-import { FormField } from '@/components/forms/FormField'
 import { Printer, CreditCard, Send, CheckCircle2, Receipt } from 'lucide-react'
 import { useContacts } from '@/features/contacts/hooks'
 import { useProducts } from '@/features/products/hooks'
