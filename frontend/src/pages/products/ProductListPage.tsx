@@ -10,9 +10,19 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useProducts } from '@/features/products/hooks'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Plus } from 'lucide-react'
+import { useProducts, useCreateProduct } from '@/features/products/hooks'
 import { ProductKanbanView } from '@/features/products/components/ProductKanbanView'
+import { ProductForm } from '@/features/products/components/ProductForm'
 import type { Product } from '@/types/product'
+import type { ProductFormValues } from '@/features/products/schema'
 
 const TYPE_LABELS: Record<Product['type'], string> = {
   goods: 'Goods',
@@ -29,13 +39,28 @@ function readStoredView(): DataViewMode {
 
 export function ProductListPage() {
   const { data: products, isLoading, isError } = useProducts()
+  const createProduct = useCreateProduct()
   const navigate = useNavigate()
   const [view, setView] = useState<DataViewMode>(readStoredView)
   const [search, setSearch] = useState('')
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   function handleViewChange(next: DataViewMode) {
     setView(next)
     localStorage.setItem(VIEW_STORAGE_KEY, next)
+  }
+
+  function handleCreateSubmit(values: ProductFormValues) {
+    const input = {
+      ...values,
+      description: values.description || null,
+      imageUrl: values.imageUrl || null,
+    }
+    createProduct.mutate(input, {
+      onSuccess: () => {
+        setIsDialogOpen(false)
+      },
+    })
   }
 
   const filteredProducts = useMemo(() => {
@@ -74,7 +99,22 @@ export function ProductListPage() {
       <PageHeader
         title="Products"
         description="Goods, services, and combos"
-        actions={<Button onClick={() => navigate('/products/new')}>New Product</Button>}
+        actions={
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Product
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>New Product</DialogTitle>
+              </DialogHeader>
+              <ProductForm onSubmit={handleCreateSubmit} isSubmitting={createProduct.isPending} />
+            </DialogContent>
+          </Dialog>
+        }
       />
 
       {isLoading && <LoadingState />}
