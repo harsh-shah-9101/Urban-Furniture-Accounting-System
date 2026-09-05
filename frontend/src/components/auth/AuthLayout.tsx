@@ -21,9 +21,9 @@ const highlights = [
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-white p-3 text-black antialiased">
+    <div className="min-h-screen bg-background p-3 text-foreground antialiased">
       <div className="grid min-h-[calc(100vh-1.5rem)] gap-6 lg:grid-cols-[0.94fr_1.06fr]">
-        <div className="flex min-h-[640px] items-center justify-center rounded-md border border-black/10 bg-white px-6 py-12 lg:min-h-0 lg:px-14 lg:py-20 xl:px-20">
+        <div className="flex min-h-[640px] items-center justify-center rounded-md border border-border bg-card px-6 py-12 lg:min-h-0 lg:px-14 lg:py-20 xl:px-20">
           <div className="mx-auto w-full max-w-[440px]">{children}</div>
         </div>
 

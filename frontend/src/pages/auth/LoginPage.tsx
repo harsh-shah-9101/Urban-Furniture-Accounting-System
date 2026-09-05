@@ -13,7 +13,7 @@ function homeRouteFor(role: string): string {
 }
 
 const fieldInputClass =
-  'h-11 w-full rounded-lg border-black/15 bg-white px-3.5 text-sm text-black placeholder:text-black/30 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
+  'h-11 w-full rounded-lg border-input bg-background px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
 
 export function LoginPage() {
   const { user, login } = useAuth()
@@ -50,14 +50,14 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <h1 className="text-3xl font-medium tracking-tight text-black sm:text-4xl">
+      <h1 className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
         Welcome back
       </h1>
-      <p className="mt-2 text-sm text-black/50">Sign in to continue to your account</p>
+      <p className="mt-2 text-sm text-muted-foreground">Sign in to continue to your account</p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="identifier" className="text-xs font-semibold text-black/60">
+          <Label htmlFor="identifier" className="text-xs font-semibold text-muted-foreground">
             Email or Login ID
           </Label>
           <Input
@@ -72,7 +72,7 @@ export function LoginPage() {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="password" className="text-xs font-semibold text-black/60">
+          <Label htmlFor="password" className="text-xs font-semibold text-muted-foreground">
             Password
           </Label>
           <PasswordInput
@@ -90,15 +90,15 @@ export function LoginPage() {
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="mt-6 h-11 w-full rounded-lg bg-black text-sm font-medium text-white hover:bg-black/85"
+          className="mt-6 h-11 w-full rounded-lg bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-black/50">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
-        <Link to="/signup" className="font-medium text-black underline underline-offset-4">
+        <Link to="/signup" className="font-medium text-foreground underline underline-offset-4">
           Sign up
         </Link>
       </p>

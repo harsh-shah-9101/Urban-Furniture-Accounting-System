@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/useAuth'
 import { ROLE_LABELS } from '@/features/auth/roles'
+import { AnimatedThemeToggler } from './AnimatedThemeToggler'
 
 export function Topbar() {
   const { user, logout } = useAuth()
@@ -24,6 +25,7 @@ export function Topbar() {
               {ROLE_LABELS[user.role]}
             </div>
           </div>
+          <AnimatedThemeToggler variant="circle" />
           <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Log out">
             <LogOut className="size-4" />
           </Button>

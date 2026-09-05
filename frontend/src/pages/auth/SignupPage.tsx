@@ -22,7 +22,7 @@ const ROLE_LABELS: Record<SignupFormValues['role'], string> = {
 }
 
 const fieldInputClass =
-  'h-11 w-full rounded-lg border-black/15 bg-white px-3.5 text-sm text-black placeholder:text-black/30 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
+  'h-11 w-full rounded-lg border-input bg-background px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
 
 export function SignupPage() {
   const { user } = useAuth()
@@ -59,10 +59,10 @@ export function SignupPage() {
 
   return (
     <AuthLayout>
-      <h1 className="text-3xl font-medium tracking-tight text-black sm:text-4xl">
+      <h1 className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
         Create an account
       </h1>
-      <p className="mt-2 text-sm text-black/50">Set up your Urban Furniture Accounting access</p>
+      <p className="mt-2 text-sm text-muted-foreground">Set up your Urban Furniture Accounting access</p>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="mt-8 space-y-4">
@@ -118,16 +118,16 @@ export function SignupPage() {
           <Button
             type="submit"
             disabled={signup.isPending}
-            className="mt-6 h-11 w-full rounded-lg bg-black text-sm font-medium text-white hover:bg-black/85"
+            className="mt-6 h-11 w-full rounded-lg bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             {signup.isPending ? 'Creating account...' : 'Sign up'}
           </Button>
         </form>
       </Form>
 
-      <p className="mt-6 text-center text-sm text-black/50">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{' '}
-        <Link to="/login" className="font-medium text-black underline underline-offset-4">
+        <Link to="/login" className="font-medium text-foreground underline underline-offset-4">
           Sign in
         </Link>
       </p>

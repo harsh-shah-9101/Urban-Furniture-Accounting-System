@@ -9,6 +9,13 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Search, MoreHorizontal, Pencil, Eye, Trash2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useContacts } from '@/features/contacts/hooks'
 import { ContactKanbanView } from '@/features/contacts/components/ContactKanbanView'
 import type { Contact } from '@/types/contact'
@@ -49,11 +56,35 @@ export function ContactListPage() {
   }, [contacts, search])
 
   const columns: ColumnDef<Contact, unknown>[] = [
-    { accessorKey: 'name', header: 'Name' },
+    {
+      accessorKey: 'name',
+      header: 'Name',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+            {row.original.name.substring(0, 2).toUpperCase()}
+          </div>
+          <span>{row.original.name}</span>
+        </div>
+      ),
+    },
     {
       accessorKey: 'type',
       header: 'Type',
-      cell: ({ row }) => <Badge variant="secondary">{TYPE_LABELS[row.original.type]}</Badge>,
+      cell: ({ row }) => (
+        <Badge
+          variant="outline"
+          className={
+            row.original.type === 'customer'
+              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+              : row.original.type === 'vendor'
+              ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+          }
+        >
+          {TYPE_LABELS[row.original.type]}
+        </Badge>
+      ),
     },
     { accessorKey: 'email', header: 'Email' },
     { accessorKey: 'mobile', header: 'Mobile', cell: ({ row }) => row.original.mobile ?? '—' },
@@ -62,6 +93,34 @@ export function ContactListPage() {
       header: 'Location',
       cell: ({ row }) =>
         [row.original.city, row.original.state].filter(Boolean).join(', ') || '—',
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => {
+        return (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/contacts/${row.original.id}`); }}>
+                  <Eye className="mr-2 h-4 w-4" /> View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/contacts/${row.original.id}/edit`); }}>
+                  <Pencil className="mr-2 h-4 w-4" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }} className="text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )
+      },
     },
   ]
 
@@ -78,12 +137,15 @@ export function ContactListPage() {
       {contacts && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search contacts..."
-              className="max-w-xs"
-            />
+            <div className="relative max-w-xs w-full">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search contacts..."
+                className="pl-9"
+              />
+            </div>
             <ViewToggle value={view} onChange={handleViewChange} />
           </div>
 
