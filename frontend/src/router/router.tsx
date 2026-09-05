@@ -72,13 +72,11 @@ export const router = createBrowserRouter([
           { path: 'accounting/journal-entries', element: <JournalEntryListPage /> },
 
           { path: 'purchases/orders', element: <PurchaseOrderListPage /> },
-          { path: 'purchases/orders/new', element: <PurchaseOrderFormPage /> },
           { path: 'purchases/orders/:id', element: <PurchaseOrderFormPage /> },
           { path: 'purchases/bills', element: <VendorBillListPage /> },
           { path: 'purchases/bills/:id', element: <VendorBillDetailPage /> },
 
           { path: 'sales/orders', element: <SalesOrderListPage /> },
-          { path: 'sales/orders/new', element: <SalesOrderFormPage /> },
           { path: 'sales/orders/:id', element: <SalesOrderFormPage /> },
           { path: 'sales/invoices', element: <CustomerInvoiceListPage /> },
           { path: 'sales/invoices/:id', element: <CustomerInvoiceDetailPage /> },

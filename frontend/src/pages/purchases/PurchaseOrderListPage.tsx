@@ -7,14 +7,39 @@ import { StatusBadge } from '@/components/data-display/StatusBadge'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { Button } from '@/components/ui/button'
-import { usePurchaseOrders } from '@/features/purchases/hooks'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Plus } from 'lucide-react'
+import { usePurchaseOrders, useCreatePurchaseOrder } from '@/features/purchases/hooks'
 import { useContacts } from '@/features/contacts/hooks'
+import { PurchaseOrderForm } from '@/features/purchases/components/PurchaseOrderForm'
 import type { PurchaseOrder } from '@/types/purchases'
+import type { PurchaseOrderFormValues } from '@/features/purchases/schema'
+import { useState } from 'react'
 
 export function PurchaseOrderListPage() {
   const { data: orders, isLoading, isError } = usePurchaseOrders()
   const { data: contacts } = useContacts()
+  const createOrder = useCreatePurchaseOrder()
   const navigate = useNavigate()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  function handleCreateSubmit(values: PurchaseOrderFormValues) {
+    const input = {
+      ...values,
+      notes: values.notes || null,
+    }
+    createOrder.mutate(input, {
+      onSuccess: () => {
+        setIsDialogOpen(false)
+      },
+    })
+  }
 
   const vendorName = (vendorId: number) => contacts?.find((c) => c.id === vendorId)?.name ?? `Vendor ${vendorId}`
 
@@ -37,7 +62,22 @@ export function PurchaseOrderListPage() {
     <div>
       <PageHeader
         title="Purchase Orders"
-        actions={<Button onClick={() => navigate('/purchases/orders/new')}>New Purchase Order</Button>}
+        actions={
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Purchase Order
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[800px]">
+              <DialogHeader>
+                <DialogTitle>New Purchase Order</DialogTitle>
+              </DialogHeader>
+              <PurchaseOrderForm onSubmit={handleCreateSubmit} isSubmitting={createOrder.isPending} />
+            </DialogContent>
+          </Dialog>
+        }
       />
 
       {isLoading && <LoadingState />}

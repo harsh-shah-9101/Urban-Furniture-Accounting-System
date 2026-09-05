@@ -36,7 +36,7 @@ export function SalesOrderForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex max-w-2xl flex-col gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <FormField control={form.control} name="customerId" label="Customer">
           {(field) => (
             <Select
