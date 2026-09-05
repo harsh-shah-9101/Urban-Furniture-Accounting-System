@@ -12,7 +12,6 @@ import { ContactListPage } from '@/pages/contacts/ContactListPage'
 import { ContactDetailPage } from '@/pages/contacts/ContactDetailPage'
 
 import { ProductListPage } from '@/pages/products/ProductListPage'
-import { ProductDetailPage } from '@/pages/products/ProductDetailPage'
 
 import { ChartOfAccountsPage } from '@/pages/accounting/ChartOfAccountsPage'
 import { JournalListPage } from '@/pages/accounting/JournalListPage'
@@ -66,7 +65,6 @@ export const router = createBrowserRouter([
           { path: 'contacts/:id', element: <ContactDetailPage /> },
 
           { path: 'products', element: <ProductListPage /> },
-          { path: 'products/:id', element: <ProductDetailPage /> },
 
           { path: 'accounting/chart-of-accounts', element: <ChartOfAccountsPage /> },
           { path: 'accounting/journal-entries', element: <JournalEntryListPage /> },
