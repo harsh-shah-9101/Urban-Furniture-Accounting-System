@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form } from '@/components/ui/form'
@@ -6,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useAccounts } from '@/features/accounts/hooks'
+import { accountFieldsForType } from '../defaultAccount'
 import { journalSchema, type JournalFormValues } from '../schema'
 
 const JOURNAL_TYPE_LABELS: Record<JournalFormValues['type'], string> = {
@@ -26,6 +28,7 @@ export function JournalForm({
   isSubmitting?: boolean
 }) {
   const { data: accounts } = useAccounts()
+  const [defaultAccountId, setDefaultAccountId] = useState<number | null>(null)
 
   const accountLabel = (value: string) => {
     if (value === NONE) return 'None'
@@ -42,6 +45,17 @@ export function JournalForm({
       defaultCreditAccountId: null,
     },
   })
+
+  const type = form.watch('type')
+
+  // Keep the single "Default Account" selection in sync with whichever debit/credit
+  // pair the current journal type actually needs (see accountFieldsForType).
+  useEffect(() => {
+    const { defaultDebitAccountId, defaultCreditAccountId } = accountFieldsForType(type, defaultAccountId)
+    form.setValue('defaultDebitAccountId', defaultDebitAccountId)
+    form.setValue('defaultCreditAccountId', defaultCreditAccountId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, defaultAccountId])
 
   return (
     <Form {...form}>
@@ -69,32 +83,11 @@ export function JournalForm({
           )}
         </FormField>
 
-        <FormField control={form.control} name="defaultDebitAccountId" label="Default Debit Account (optional)">
-          {(field) => (
+        <FormField control={form.control} name="defaultDebitAccountId" label="Default Account (optional)">
+          {() => (
             <Select
-              value={field.value === null ? NONE : String(field.value)}
-              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="None">{accountLabel}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>None</SelectItem>
-                {accounts?.map((account) => (
-                  <SelectItem key={account.id} value={String(account.id)}>
-                    {account.code} — {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </FormField>
-
-        <FormField control={form.control} name="defaultCreditAccountId" label="Default Credit Account (optional)">
-          {(field) => (
-            <Select
-              value={field.value === null ? NONE : String(field.value)}
-              onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
+              value={defaultAccountId === null ? NONE : String(defaultAccountId)}
+              onValueChange={(value) => setDefaultAccountId(value === NONE ? null : Number(value))}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="None">{accountLabel}</SelectValue>

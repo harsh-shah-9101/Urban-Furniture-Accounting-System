@@ -4,9 +4,14 @@ import {
   Users,
   Package,
   BookOpen,
+  NotebookText,
+  ClipboardList,
   ShoppingCart,
   Receipt,
+  ShoppingBag,
+  FileText,
   Wallet,
+  Tags,
   PiggyBank,
   BarChart3,
 } from 'lucide-react'
@@ -43,9 +48,9 @@ export function Sidebar() {
       items: [
         { to: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: BookOpen },
         ...(user && canManageJournalDefinitions(user.role)
-          ? [{ to: '/accounting/journals', label: 'Journals', icon: BookOpen }]
+          ? [{ to: '/accounting/journals', label: 'Journals', icon: NotebookText }]
           : []),
-        { to: '/accounting/journal-entries', label: 'Journal Entries', icon: BookOpen },
+        { to: '/accounting/journal-entries', label: 'Journal Entries', icon: ClipboardList },
       ],
     },
     {
@@ -58,15 +63,15 @@ export function Sidebar() {
     {
       label: 'Sales',
       items: [
-        { to: '/sales/orders', label: 'Sales Orders', icon: ShoppingCart },
-        { to: '/sales/invoices', label: 'Customer Invoices', icon: Receipt },
+        { to: '/sales/orders', label: 'Sales Orders', icon: ShoppingBag },
+        { to: '/sales/invoices', label: 'Customer Invoices', icon: FileText },
       ],
     },
     { label: '', items: [{ to: '/payments', label: 'Payments', icon: Wallet }] },
     {
       label: 'Budgets',
       items: [
-        { to: '/budgets/analytic-accounts', label: 'Analytic Accounts', icon: PiggyBank },
+        { to: '/budgets/analytic-accounts', label: 'Analytic Accounts', icon: Tags },
         { to: '/budgets', label: 'Budgets', icon: PiggyBank, end: true },
       ],
     },

@@ -7,6 +7,8 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useJournals } from '@/features/journals/hooks'
+import { useAccounts } from '@/features/accounts/hooks'
+import { defaultAccountIdFor } from '@/features/journals/defaultAccount'
 import type { Journal } from '@/types/accounting'
 
 const TYPE_LABELS: Record<Journal['type'], string> = {
@@ -19,6 +21,7 @@ const TYPE_LABELS: Record<Journal['type'], string> = {
 
 export function JournalListPage() {
   const { data: journals, isLoading, isError } = useJournals()
+  const { data: accounts } = useAccounts()
   const navigate = useNavigate()
 
   const columns: ColumnDef<Journal, unknown>[] = [
@@ -27,6 +30,20 @@ export function JournalListPage() {
       accessorKey: 'type',
       header: 'Type',
       cell: ({ row }) => <Badge variant="secondary">{TYPE_LABELS[row.original.type]}</Badge>,
+    },
+    {
+      id: 'defaultAccount',
+      header: 'Default Account',
+      cell: ({ row }) => {
+        const accountId = defaultAccountIdFor(
+          row.original.type,
+          row.original.defaultDebitAccountId,
+          row.original.defaultCreditAccountId,
+        )
+        const account = accounts?.find((a) => a.id === accountId)
+        if (!account) return <span className="text-muted-foreground">—</span>
+        return `${account.code} — ${account.name}`
+      },
     },
   ]
 
