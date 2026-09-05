@@ -252,6 +252,33 @@ class CustomerPaymentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PaymentGatewayOrderOut(BaseModel):
+    id: int
+    customer_invoice_id: int
+    provider: str
+    provider_order_id: str
+    amount: Decimal
+    currency: str
+    status: str
+    receipt: str
+    key_id: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class RazorpayVerifyIn(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+
+class RazorpayVerifyOut(BaseModel):
+    verified: bool
+    invoice: CustomerInvoiceOut
+    payment: CustomerPaymentOut | None = None
+    gateway_order: PaymentGatewayOrderOut
+
+
 class JournalEntryLineOut(BaseModel):
     id: int
     account_id: int

@@ -22,6 +22,7 @@ The backend now covers the main accounting workflow:
 - Contact, product, account, and journal master data
 - Purchase order -> vendor bill -> vendor bill payment
 - Sales order -> customer invoice -> customer invoice payment
+- Razorpay payment order creation and signature verification
 - Automatic debit/credit journal entries
 - Trial balance, profit/loss, balance sheet, and budget report
 - Customer portal invoice view
@@ -91,3 +92,25 @@ PostgreSQL connection inside pgAdmin:
 - Customer invoices: `/customer-invoices`, `/customer-invoices/{id}/post`, `/customer-invoices/{id}/pay`
 - Customer portal: `/customer-portal/invoices`
 - Reports: `/reports/trial-balance`, `/reports/profit-loss`, `/reports/balance-sheet`, `/reports/budget`
+- Payment gateway: `/customer-invoices/{id}/razorpay-order`, `/payments/razorpay/verify`, `/payment-gateway/orders`
+
+## Razorpay Payment Flow
+
+Add Razorpay test keys in `backend/.env`:
+
+```env
+RAZORPAY_KEY_ID=rzp_test_xxxxx
+RAZORPAY_KEY_SECRET=xxxxx
+PAYMENT_CURRENCY=INR
+```
+
+Flow:
+
+1. Admin/accountant posts a customer invoice.
+2. Frontend calls `POST /customer-invoices/{invoice_id}/razorpay-order`.
+3. Backend creates a Razorpay order and returns `provider_order_id`, `amount`, `currency`, and `key_id`.
+4. Frontend opens Razorpay Checkout using that order id.
+5. After payment, frontend sends `razorpay_order_id`, `razorpay_payment_id`, and `razorpay_signature` to `POST /payments/razorpay/verify`.
+6. Backend verifies the HMAC SHA256 signature, marks invoice as paid, creates customer payment, and posts journal entries.
+
+If Razorpay keys are empty, the backend runs in demo mode for hackathon testing. Use `razorpay_signature` as `demo`.

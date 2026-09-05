@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import Base, SessionLocal, engine, get_db
-from app.models import Account, Contact, CustomerInvoice, Journal, JournalEntry, Product, PurchaseOrder, SalesOrder, UserRole, VendorBill
+from app.models import Account, Contact, CustomerInvoice, Journal, JournalEntry, PaymentGatewayOrder, Product, PurchaseOrder, SalesOrder, UserRole, VendorBill
 from app.schemas import (
     AccountCreate,
     AccountOut,
@@ -23,12 +23,15 @@ from app.schemas import (
     JournalOut,
     LoginIn,
     PaymentCreate,
+    PaymentGatewayOrderOut,
     PaymentOut,
     ProductCreate,
     ProductOut,
     ProfitLossOut,
     PurchaseOrderCreate,
     PurchaseOrderOut,
+    RazorpayVerifyIn,
+    RazorpayVerifyOut,
     SalesOrderCreate,
     SalesOrderOut,
     SignupIn,
@@ -40,6 +43,7 @@ from app.services import (
     balance_sheet,
     create_account,
     create_contact,
+    create_customer_invoice_payment_order,
     create_customer_invoice_from_so,
     create_journal,
     create_product,
@@ -57,14 +61,16 @@ from app.services import (
     profit_and_loss,
     seed,
     trial_balance,
+    verify_razorpay_payment,
 )
 
 app = FastAPI(title="Urban Furniture Accounting API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
-    allow_credentials=True,
+    # allow_origins=settings.cors_origin_list,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -387,6 +393,47 @@ def post_invoice_payment(
 ) -> CustomerPaymentOut:
     require_role({UserRole.admin, UserRole.accountant}, x_user_role)
     return pay_customer_invoice(db, invoice_id, payload)
+
+
+@app.post("/customer-invoices/{invoice_id}/razorpay-order", response_model=PaymentGatewayOrderOut)
+def post_customer_invoice_razorpay_order(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    x_user_role: str | None = Header(default=None),
+) -> PaymentGatewayOrder:
+    require_role({UserRole.admin, UserRole.accountant, UserRole.customer}, x_user_role)
+    gateway_order = create_customer_invoice_payment_order(db, invoice_id)
+    gateway_order.key_id = settings.razorpay_key_id or "demo_key_id"
+    return gateway_order
+
+
+@app.post("/payments/razorpay/verify", response_model=RazorpayVerifyOut)
+def post_razorpay_verify(
+    payload: RazorpayVerifyIn,
+    db: Session = Depends(get_db),
+    x_user_role: str | None = Header(default=None),
+) -> dict:
+    require_role({UserRole.admin, UserRole.accountant, UserRole.customer}, x_user_role)
+    invoice, payment, gateway_order = verify_razorpay_payment(db, payload)
+    gateway_order.key_id = settings.razorpay_key_id or "demo_key_id"
+    return {
+        "verified": True,
+        "invoice": invoice,
+        "payment": payment,
+        "gateway_order": gateway_order,
+    }
+
+
+@app.get("/payment-gateway/orders", response_model=list[PaymentGatewayOrderOut])
+def list_payment_gateway_orders(
+    db: Session = Depends(get_db),
+    x_user_role: str | None = Header(default=None),
+) -> list[PaymentGatewayOrder]:
+    require_role({UserRole.admin, UserRole.accountant}, x_user_role)
+    orders = list(db.scalars(select(PaymentGatewayOrder).order_by(PaymentGatewayOrder.id.desc())).all())
+    for order in orders:
+        order.key_id = settings.razorpay_key_id or "demo_key_id"
+    return orders
 
 
 @app.get("/reports/trial-balance", response_model=list[TrialBalanceLineOut])

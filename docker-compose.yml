@@ -30,6 +30,9 @@ services:
       POSTGRES_USER: urbanbooks
       POSTGRES_PASSWORD: urbanbooks
       CORS_ORIGINS: http://localhost:5173
+      RAZORPAY_KEY_ID: ""
+      RAZORPAY_KEY_SECRET: ""
+      PAYMENT_CURRENCY: INR
     ports:
       - "5000:5000"
     depends_on:

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     postgres_user: str = "postgres"
     postgres_password: str = ""
     cors_origins: str = "http://localhost:5173"
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    payment_currency: str = "INR"
 
     @property
     def database_url(self) -> str:

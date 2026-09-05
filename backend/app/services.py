@@ -1,10 +1,17 @@
 import hashlib
+import hmac
+import json
 import secrets
+from base64 import b64encode
+from decimal import Decimal
+from urllib import request
+from urllib.error import HTTPError, URLError
 
 from fastapi import HTTPException
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models import (
     Account,
     AccountType,
@@ -20,6 +27,7 @@ from app.models import (
     JournalEntryLine,
     InvoiceStatus,
     Payment,
+    PaymentGatewayOrder,
     PaymentMethod,
     Product,
     ProductType,
@@ -34,7 +42,7 @@ from app.models import (
     VendorBill,
     VendorBillLine,
 )
-from app.schemas import AccountCreate, ContactCreate, JournalCreate, PaymentCreate, ProductCreate, PurchaseOrderCreate, SalesOrderCreate, SignupIn
+from app.schemas import AccountCreate, ContactCreate, JournalCreate, PaymentCreate, ProductCreate, PurchaseOrderCreate, RazorpayVerifyIn, SalesOrderCreate, SignupIn
 
 
 def hash_password(password: str) -> str:
@@ -390,6 +398,129 @@ def pay_customer_invoice(db: Session, invoice_id: int, payload: PaymentCreate) -
     db.commit()
     db.refresh(payment)
     return payment
+
+
+def _amount_to_paise(amount: Decimal) -> int:
+    return int((amount * 100).quantize(Decimal("1")))
+
+
+def _create_razorpay_order(invoice: CustomerInvoice, receipt: str) -> dict:
+    amount_paise = _amount_to_paise(invoice.total_amount)
+    payload = {
+        "amount": amount_paise,
+        "currency": settings.payment_currency,
+        "receipt": receipt,
+    }
+    if not settings.razorpay_key_id or not settings.razorpay_key_secret:
+        return {
+            "id": f"demo_order_{invoice.id}_{secrets.token_hex(6)}",
+            "amount": amount_paise,
+            "currency": settings.payment_currency,
+            "receipt": receipt,
+            "status": "created",
+        }
+
+    body = json.dumps(payload).encode("utf-8")
+    token = b64encode(f"{settings.razorpay_key_id}:{settings.razorpay_key_secret}".encode("utf-8")).decode("ascii")
+    http_request = request.Request(
+        "https://api.razorpay.com/v1/orders",
+        data=body,
+        headers={
+            "Authorization": f"Basic {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with request.urlopen(http_request, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise HTTPException(status_code=502, detail=f"Razorpay order creation failed: {detail}") from exc
+    except URLError as exc:
+        raise HTTPException(status_code=502, detail=f"Razorpay connection failed: {exc.reason}") from exc
+
+
+def create_customer_invoice_payment_order(db: Session, invoice_id: int) -> PaymentGatewayOrder:
+    invoice = db.get(CustomerInvoice, invoice_id)
+    if invoice is None:
+        raise HTTPException(status_code=404, detail="Customer invoice not found")
+    if invoice.status != InvoiceStatus.posted:
+        raise HTTPException(status_code=400, detail="Only posted customer invoices can start online payment")
+
+    existing = db.scalar(
+        select(PaymentGatewayOrder).where(
+            PaymentGatewayOrder.customer_invoice_id == invoice.id,
+            PaymentGatewayOrder.status == "created",
+        )
+    )
+    if existing:
+        return existing
+
+    receipt = f"invoice_{invoice.id}"
+    razorpay_order = _create_razorpay_order(invoice, receipt)
+    gateway_order = PaymentGatewayOrder(
+        customer_invoice_id=invoice.id,
+        provider="razorpay",
+        provider_order_id=razorpay_order["id"],
+        amount=invoice.total_amount,
+        currency=razorpay_order.get("currency", settings.payment_currency),
+        status=razorpay_order.get("status", "created"),
+        receipt=razorpay_order.get("receipt", receipt),
+    )
+    db.add(gateway_order)
+    db.commit()
+    db.refresh(gateway_order)
+    return gateway_order
+
+
+def verify_razorpay_payment(db: Session, payload: RazorpayVerifyIn) -> tuple[CustomerInvoice, CustomerPayment | None, PaymentGatewayOrder]:
+    gateway_order = db.scalar(
+        select(PaymentGatewayOrder).where(PaymentGatewayOrder.provider_order_id == payload.razorpay_order_id)
+    )
+    if gateway_order is None:
+        raise HTTPException(status_code=404, detail="Payment order not found")
+
+    if settings.razorpay_key_secret:
+        message = f"{payload.razorpay_order_id}|{payload.razorpay_payment_id}".encode("utf-8")
+        expected_signature = hmac.new(
+            settings.razorpay_key_secret.encode("utf-8"),
+            message,
+            hashlib.sha256,
+        ).hexdigest()
+        if not secrets.compare_digest(expected_signature, payload.razorpay_signature):
+            gateway_order.status = "failed"
+            db.commit()
+            raise HTTPException(status_code=400, detail="Invalid Razorpay payment signature")
+    elif payload.razorpay_signature != "demo":
+        raise HTTPException(status_code=400, detail="Demo mode expects razorpay_signature='demo'")
+
+    invoice = db.get(CustomerInvoice, gateway_order.customer_invoice_id)
+    if invoice is None:
+        raise HTTPException(status_code=404, detail="Customer invoice not found")
+
+    payment = None
+    if invoice.status == InvoiceStatus.posted:
+        payment = pay_customer_invoice(
+            db,
+            invoice.id,
+            PaymentCreate(
+                method=PaymentMethod.bank,
+                amount=gateway_order.amount,
+                reference=payload.razorpay_payment_id,
+            ),
+        )
+        db.refresh(gateway_order)
+    elif invoice.status != InvoiceStatus.paid:
+        raise HTTPException(status_code=400, detail="Invoice cannot be marked paid from current status")
+
+    gateway_order.provider_payment_id = payload.razorpay_payment_id
+    gateway_order.signature = payload.razorpay_signature
+    gateway_order.status = "paid"
+    db.commit()
+    db.refresh(gateway_order)
+    db.refresh(invoice)
+    return invoice, payment, gateway_order
 
 
 def trial_balance(db: Session) -> list[dict]:

@@ -283,6 +283,24 @@ class CustomerPayment(Base):
     customer_invoice: Mapped[CustomerInvoice] = relationship()
 
 
+class PaymentGatewayOrder(Base):
+    __tablename__ = "payment_gateway_orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_invoice_id: Mapped[int] = mapped_column(ForeignKey("customer_invoices.id"), nullable=False)
+    provider: Mapped[str] = mapped_column(String(40), default="razorpay", nullable=False)
+    provider_order_id: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    provider_payment_id: Mapped[str | None] = mapped_column(String(120))
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), default="INR", nullable=False)
+    status: Mapped[str] = mapped_column(String(30), default="created", nullable=False)
+    receipt: Mapped[str] = mapped_column(String(120), nullable=False)
+    signature: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    customer_invoice: Mapped[CustomerInvoice] = relationship()
+
+
 class JournalEntry(Base):
     __tablename__ = "journal_entries"
 
