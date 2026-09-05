@@ -29,6 +29,11 @@ interface DataTableProps<TData> {
   onRowClick?: (row: TData) => void
   emptyTitle?: string
   emptyDescription?: string
+  /** Controlled search value. When provided along with onSearchChange, the table's filter is driven externally. */
+  searchValue?: string
+  onSearchChange?: (value: string) => void
+  /** Hides the built-in search input, e.g. when a parent renders a shared search bar above list/kanban toggles. */
+  hideSearchInput?: boolean
 }
 
 export function DataTable<TData>({
@@ -38,9 +43,14 @@ export function DataTable<TData>({
   onRowClick,
   emptyTitle = 'No records yet',
   emptyDescription,
+  searchValue,
+  onSearchChange,
+  hideSearchInput = false,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([])
-  const [globalFilter, setGlobalFilter] = useState('')
+  const [internalFilter, setInternalFilter] = useState('')
+  const globalFilter = searchValue ?? internalFilter
+  const setGlobalFilter = onSearchChange ?? setInternalFilter
 
   const table = useReactTable({
     data,
@@ -57,12 +67,14 @@ export function DataTable<TData>({
 
   return (
     <div className="flex flex-col gap-3">
-      <Input
-        value={globalFilter}
-        onChange={(e) => setGlobalFilter(e.target.value)}
-        placeholder={searchPlaceholder}
-        className="max-w-xs"
-      />
+      {!hideSearchInput && (
+        <Input
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          placeholder={searchPlaceholder}
+          className="max-w-xs"
+        />
+      )}
       <div className="rounded-lg border border-border">
         <Table>
           <TableHeader>
