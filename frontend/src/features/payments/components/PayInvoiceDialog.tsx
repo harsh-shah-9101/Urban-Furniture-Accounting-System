@@ -26,7 +26,7 @@ export function PayInvoiceDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const order = useMemo(() => buildMockUpiOrder(invoiceId, amount), [invoiceId, amount])
-  const simulate = useSimulateInvoicePayment()
+  const simulate = useSimulateInvoicePayment(invoiceId)
 
   useEffect(() => {
     if (open) simulate.mutate()
@@ -61,8 +61,7 @@ export function PayInvoiceDialog({
             </div>
             <div className="text-sm text-muted-foreground">Reference: {order.referenceId}</div>
             <div className="mt-1 max-w-xs text-xs text-muted-foreground">
-              We've received your payment. It's being confirmed by our team and this invoice will
-              update to Paid shortly.
+              This invoice is now marked Paid. (Simulated payment — for demo purposes only.)
             </div>
           </div>
         ) : (
