@@ -1,13 +1,17 @@
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DataTable } from '@/components/data-display/DataTable'
+import { ViewToggle, type DataViewMode } from '@/components/data-display/ViewToggle'
 import { CurrencyText } from '@/components/data-display/CurrencyText'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useProducts } from '@/features/products/hooks'
+import { ProductKanbanView } from '@/features/products/components/ProductKanbanView'
 import type { Product } from '@/types/product'
 
 const TYPE_LABELS: Record<Product['type'], string> = {
@@ -16,9 +20,34 @@ const TYPE_LABELS: Record<Product['type'], string> = {
   combo: 'Combo',
 }
 
+const VIEW_STORAGE_KEY = 'products:view-mode'
+
+function readStoredView(): DataViewMode {
+  const stored = localStorage.getItem(VIEW_STORAGE_KEY)
+  return stored === 'kanban' ? 'kanban' : 'list'
+}
+
 export function ProductListPage() {
   const { data: products, isLoading, isError } = useProducts()
   const navigate = useNavigate()
+  const [view, setView] = useState<DataViewMode>(readStoredView)
+  const [search, setSearch] = useState('')
+
+  function handleViewChange(next: DataViewMode) {
+    setView(next)
+    localStorage.setItem(VIEW_STORAGE_KEY, next)
+  }
+
+  const filteredProducts = useMemo(() => {
+    if (!products) return []
+    const query = search.trim().toLowerCase()
+    if (!query) return products
+    return products.filter((product) =>
+      [product.name, product.category]
+        .filter(Boolean)
+        .some((field) => field!.toLowerCase().includes(query))
+    )
+  }, [products, search])
 
   const columns: ColumnDef<Product, unknown>[] = [
     { accessorKey: 'name', header: 'Name' },
@@ -51,13 +80,31 @@ export function ProductListPage() {
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load products." />}
       {products && (
-        <DataTable
-          columns={columns}
-          data={products}
-          searchPlaceholder="Search products..."
-          emptyTitle="No products yet"
-          emptyDescription="Add your first product to get started."
-        />
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search products..."
+              className="max-w-xs"
+            />
+            <ViewToggle value={view} onChange={handleViewChange} />
+          </div>
+
+          {view === 'list' ? (
+            <DataTable
+              columns={columns}
+              data={products}
+              emptyTitle="No products yet"
+              emptyDescription="Add your first product to get started."
+              searchValue={search}
+              onSearchChange={setSearch}
+              hideSearchInput
+            />
+          ) : (
+            <ProductKanbanView products={filteredProducts} />
+          )}
+        </div>
       )}
     </div>
   )
