@@ -9,7 +9,6 @@ import { UnauthorizedPage } from '@/pages/auth/UnauthorizedPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 
 import { ContactListPage } from '@/pages/contacts/ContactListPage'
-import { ContactFormPage } from '@/pages/contacts/ContactFormPage'
 import { ContactDetailPage } from '@/pages/contacts/ContactDetailPage'
 
 import { ProductListPage } from '@/pages/products/ProductListPage'
@@ -66,7 +65,6 @@ export const router = createBrowserRouter([
           { path: 'dashboard', element: <DashboardPage /> },
 
           { path: 'contacts', element: <ContactListPage /> },
-          { path: 'contacts/new', element: <ContactFormPage /> },
           { path: 'contacts/:id', element: <ContactDetailPage /> },
 
           { path: 'products', element: <ProductListPage /> },

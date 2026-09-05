@@ -39,7 +39,7 @@ export function ContactForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex max-w-lg flex-col gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <FormField control={form.control} name="name" label="Name">
           {(field) => <Input {...field} placeholder="e.g. Azure Furniture" />}
         </FormField>
@@ -87,7 +87,7 @@ export function ContactForm({
           {(field) => <Input {...field} placeholder="https://..." />}
         </FormField>
 
-        <Button type="submit" disabled={isSubmitting} className="mt-2 w-fit">
+        <Button type="submit" disabled={isSubmitting} className="mt-4 w-fit">
           {isSubmitting ? 'Saving...' : 'Save Contact'}
         </Button>
       </form>

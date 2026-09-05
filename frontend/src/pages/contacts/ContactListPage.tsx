@@ -9,16 +9,25 @@ import { ErrorState } from '@/components/feedback/ErrorState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, MoreHorizontal, Pencil, Eye, Trash2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Search, MoreHorizontal, Pencil, Eye, Trash2, Plus } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useContacts } from '@/features/contacts/hooks'
+import { useContacts, useCreateContact } from '@/features/contacts/hooks'
 import { ContactKanbanView } from '@/features/contacts/components/ContactKanbanView'
+import { ContactForm } from '@/features/contacts/components/ContactForm'
 import type { Contact } from '@/types/contact'
+import type { ContactFormValues } from '@/features/contacts/schema'
 
 const TYPE_LABELS: Record<Contact['type'], string> = {
   customer: 'Customer',
@@ -35,13 +44,31 @@ function readStoredView(): DataViewMode {
 
 export function ContactListPage() {
   const { data: contacts, isLoading, isError } = useContacts()
+  const createContact = useCreateContact()
   const navigate = useNavigate()
   const [view, setView] = useState<DataViewMode>(readStoredView)
   const [search, setSearch] = useState('')
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   function handleViewChange(next: DataViewMode) {
     setView(next)
     localStorage.setItem(VIEW_STORAGE_KEY, next)
+  }
+
+  function handleCreateSubmit(values: ContactFormValues) {
+    const input = {
+      ...values,
+      mobile: values.mobile || null,
+      city: values.city || null,
+      state: values.state || null,
+      pincode: values.pincode || null,
+      profileImageUrl: values.profileImageUrl || null,
+    }
+    createContact.mutate(input, {
+      onSuccess: () => {
+        setIsDialogOpen(false)
+      },
+    })
   }
 
   const filteredContacts = useMemo(() => {
@@ -129,7 +156,22 @@ export function ContactListPage() {
       <PageHeader
         title="Contacts"
         description="Customers and vendors"
-        actions={<Button onClick={() => navigate('/contacts/new')}>New Contact</Button>}
+        actions={
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Contact
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>New Contact</DialogTitle>
+              </DialogHeader>
+              <ContactForm onSubmit={handleCreateSubmit} isSubmitting={createContact.isPending} />
+            </DialogContent>
+          </Dialog>
+        }
       />
 
       {isLoading && <LoadingState />}
