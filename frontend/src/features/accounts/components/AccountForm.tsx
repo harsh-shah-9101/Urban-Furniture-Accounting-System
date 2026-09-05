@@ -29,7 +29,7 @@ export function AccountForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex max-w-lg flex-col gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <FormField control={form.control} name="code" label="Code">
           {(field) => <Input {...field} placeholder="e.g. 1000" />}
         </FormField>

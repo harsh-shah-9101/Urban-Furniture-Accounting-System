@@ -15,9 +15,7 @@ import { ProductListPage } from '@/pages/products/ProductListPage'
 import { ProductDetailPage } from '@/pages/products/ProductDetailPage'
 
 import { ChartOfAccountsPage } from '@/pages/accounting/ChartOfAccountsPage'
-import { AccountFormPage } from '@/pages/accounting/AccountFormPage'
 import { JournalListPage } from '@/pages/accounting/JournalListPage'
-import { JournalFormPage } from '@/pages/accounting/JournalFormPage'
 import { JournalEntryListPage } from '@/pages/accounting/JournalEntryListPage'
 
 import { PurchaseOrderListPage } from '@/pages/purchases/PurchaseOrderListPage'
@@ -71,7 +69,6 @@ export const router = createBrowserRouter([
           { path: 'products/:id', element: <ProductDetailPage /> },
 
           { path: 'accounting/chart-of-accounts', element: <ChartOfAccountsPage /> },
-          { path: 'accounting/chart-of-accounts/new', element: <AccountFormPage /> },
           { path: 'accounting/journal-entries', element: <JournalEntryListPage /> },
 
           { path: 'purchases/orders', element: <PurchaseOrderListPage /> },
@@ -110,7 +107,6 @@ export const router = createBrowserRouter([
             element: <AdminShell />,
             children: [
               { path: 'accounting/journals', element: <JournalListPage /> },
-              { path: 'accounting/journals/new', element: <JournalFormPage /> },
             ],
           },
         ],

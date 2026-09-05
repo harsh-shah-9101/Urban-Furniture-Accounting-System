@@ -6,8 +6,19 @@ import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useAccounts } from '@/features/accounts/hooks'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Plus } from 'lucide-react'
+import { useAccounts, useCreateAccount } from '@/features/accounts/hooks'
+import { AccountForm } from '@/features/accounts/components/AccountForm'
 import type { Account } from '@/types/accounting'
+import type { AccountFormValues } from '@/features/accounts/schema'
+import { useState } from 'react'
 
 const TYPE_LABELS: Record<Account['type'], string> = {
   asset: 'Asset',
@@ -19,7 +30,17 @@ const TYPE_LABELS: Record<Account['type'], string> = {
 
 export function ChartOfAccountsPage() {
   const { data: accounts, isLoading, isError } = useAccounts()
+  const createAccount = useCreateAccount()
   const navigate = useNavigate()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  function handleCreateSubmit(values: AccountFormValues) {
+    createAccount.mutate(values, {
+      onSuccess: () => {
+        setIsDialogOpen(false)
+      },
+    })
+  }
 
   const columns: ColumnDef<Account, unknown>[] = [
     { accessorKey: 'code', header: 'Code' },
@@ -37,7 +58,20 @@ export function ChartOfAccountsPage() {
         title="Chart of Accounts"
         description="Master list of ledger accounts"
         actions={
-          <Button onClick={() => navigate('/accounting/chart-of-accounts/new')}>New Account</Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Account
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>New Account</DialogTitle>
+              </DialogHeader>
+              <AccountForm onSubmit={handleCreateSubmit} isSubmitting={createAccount.isPending} />
+            </DialogContent>
+          </Dialog>
         }
       />
 

@@ -59,7 +59,7 @@ export function JournalForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex max-w-lg flex-col gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <FormField control={form.control} name="name" label="Name">
           {(field) => <Input {...field} placeholder="e.g. Sales Journal" />}
         </FormField>
