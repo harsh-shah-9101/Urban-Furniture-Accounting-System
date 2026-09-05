@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LoadingState } from '@/components/feedback/LoadingState'
@@ -8,13 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { usePortalInvoice } from '@/features/customer-portal/hooks'
-import { usePayInvoiceWithRazorpay } from '@/features/payments/hooks'
+import { PayInvoiceDialog } from '@/features/payments/components/PayInvoiceDialog'
 
 export function PortalInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>()
   const invoiceId = Number(id)
   const { data: invoice, isLoading, isError } = usePortalInvoice(invoiceId)
-  const payWithRazorpay = usePayInvoiceWithRazorpay(invoiceId)
+  const [payDialogOpen, setPayDialogOpen] = useState(false)
 
   if (isLoading) return <LoadingState rows={4} />
   if (isError || !invoice) return <ErrorState message="Invoice not found." />
@@ -66,15 +67,20 @@ export function PortalInvoiceDetailPage() {
         <Card className="mt-4 max-w-2xl">
           <CardHeader>
             <CardTitle>Payment</CardTitle>
-            <CardDescription>Pay this invoice securely online via Razorpay.</CardDescription>
+            <CardDescription>Pay this invoice securely online via UPI.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => payWithRazorpay.mutate()} disabled={payWithRazorpay.isPending}>
-              {payWithRazorpay.isPending ? 'Processing...' : 'Pay Now'}
-            </Button>
+            <Button onClick={() => setPayDialogOpen(true)}>Pay Now</Button>
           </CardContent>
         </Card>
       )}
+
+      <PayInvoiceDialog
+        invoiceId={invoice.id}
+        amount={invoice.totalAmount}
+        open={payDialogOpen}
+        onOpenChange={setPayDialogOpen}
+      />
     </div>
   )
 }

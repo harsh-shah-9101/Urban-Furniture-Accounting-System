@@ -64,19 +64,6 @@ export function useCreateBillFromPurchaseOrder(id: number) {
   })
 }
 
-export function useCancelPurchaseOrder(id: number) {
-  const role = useRole()
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: () => purchaseOrdersApi.cancel(id, role),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.detail(id) })
-      toast.success('Purchase order cancelled')
-    },
-  })
-}
-
 export function useVendorBills() {
   const role = useRole()
   return useQuery({ queryKey: vendorBillKeys.lists(), queryFn: () => vendorBillsApi.list(role) })
@@ -117,15 +104,3 @@ export function usePayVendorBill(id: number) {
   })
 }
 
-export function useCancelVendorBill(id: number) {
-  const role = useRole()
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: () => vendorBillsApi.cancel(id, role),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: vendorBillKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: vendorBillKeys.detail(id) })
-      toast.success('Vendor bill cancelled')
-    },
-  })
-}

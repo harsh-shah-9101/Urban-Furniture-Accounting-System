@@ -1,11 +1,9 @@
-import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
-import { ConfirmDialog } from '@/components/feedback/ConfirmDialog'
 import { StatusBadge } from '@/components/data-display/StatusBadge'
 import { CurrencyText } from '@/components/data-display/CurrencyText'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,7 +16,7 @@ import { Form } from '@/components/ui/form'
 import { FormField } from '@/components/forms/FormField'
 import { useContacts } from '@/features/contacts/hooks'
 import { useProducts } from '@/features/products/hooks'
-import { useCancelVendorBill, usePayVendorBill, usePostVendorBill, useVendorBill } from '@/features/purchases/hooks'
+import { usePayVendorBill, usePostVendorBill, useVendorBill } from '@/features/purchases/hooks'
 import { billPaymentSchema, type BillPaymentFormValues } from '@/features/purchases/schema'
 
 function RegisterPaymentForm({ billId }: { billId: number }) {
@@ -82,8 +80,6 @@ export function VendorBillDetailPage() {
   const { data: contacts } = useContacts()
   const { data: products } = useProducts()
   const postBill = usePostVendorBill(billId)
-  const cancelBill = useCancelVendorBill(billId)
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
 
   if (isLoading) return <LoadingState rows={4} />
   if (isError || !bill) return <ErrorState message="Vendor bill not found." />
@@ -100,27 +96,12 @@ export function VendorBillDetailPage() {
         actions={
           <div className="flex gap-2">
             {bill.status === 'draft' && (
-              <Button variant="outline" onClick={() => setCancelDialogOpen(true)} disabled={cancelBill.isPending}>
-                {cancelBill.isPending ? 'Cancelling...' : 'Cancel'}
-              </Button>
-            )}
-            {bill.status === 'draft' && (
               <Button onClick={() => postBill.mutate()} disabled={postBill.isPending}>
                 {postBill.isPending ? 'Posting...' : 'Post Bill'}
               </Button>
             )}
           </div>
         }
-      />
-
-      <ConfirmDialog
-        open={cancelDialogOpen}
-        onOpenChange={setCancelDialogOpen}
-        title="Cancel this vendor bill?"
-        description="This cannot be undone. The bill will be marked as cancelled."
-        confirmLabel="Cancel Bill"
-        destructive
-        onConfirm={() => cancelBill.mutate()}
       />
 
       <Card className="max-w-2xl">

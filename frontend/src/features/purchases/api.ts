@@ -127,10 +127,6 @@ export const purchaseOrdersApi = {
     const dto = await apiPost<VendorBillDto>(`/purchase-orders/${id}/create-bill`, {}, roleHeaders(role))
     return fromVendorBillDto(dto)
   },
-  cancel: async (id: number, role?: BackendUserRole) => {
-    const dto = await apiPost<PurchaseOrderDto>(`/purchase-orders/${id}/cancel`, {}, roleHeaders(role))
-    return fromPurchaseOrderDto(dto)
-  },
 }
 
 export const vendorBillsApi = {
@@ -149,9 +145,5 @@ export const vendorBillsApi = {
   pay: async (id: number, input: BillPaymentInput, role?: BackendUserRole) => {
     const dto = await apiPost<BillPaymentDto>(`/vendor-bills/${id}/pay`, toPaymentDto(input), roleHeaders(role))
     return fromPaymentDto(dto)
-  },
-  cancel: async (id: number, role?: BackendUserRole) => {
-    const dto = await apiPost<VendorBillDto>(`/vendor-bills/${id}/cancel`, {}, roleHeaders(role))
-    return fromVendorBillDto(dto)
   },
 }
