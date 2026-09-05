@@ -1,9 +1,18 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 
 
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=BACKEND_DIR / ".env",
+        env_file_encoding="utf-8",
+        env_ignore_empty=True,
+    )
 
     postgres_host: str = "localhost"
     postgres_port: int = 5432
