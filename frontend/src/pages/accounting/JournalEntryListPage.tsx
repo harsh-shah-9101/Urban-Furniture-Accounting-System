@@ -1,21 +1,42 @@
+import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { DataTable } from '@/components/data-display/DataTable'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
-import { EmptyState } from '@/components/feedback/EmptyState'
 import { StatusBadge } from '@/components/data-display/StatusBadge'
 import { CurrencyText } from '@/components/data-display/CurrencyText'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useJournalEntries } from '@/features/journal-entries/hooks'
 import { useJournals } from '@/features/journals/hooks'
 import { useAccounts } from '@/features/accounts/hooks'
 import { useContacts } from '@/features/contacts/hooks'
+import type { JournalEntry } from '@/types/accounting'
+
+/** A balanced entry's debit and credit lines sum to the same figure — either works as the total. */
+function entryTotal(entry: JournalEntry): number {
+  const debitTotal = entry.lines.reduce((sum, line) => sum + line.debit, 0)
+  return debitTotal > 0 ? debitTotal : entry.lines.reduce((sum, line) => sum + line.credit, 0)
+}
+
+/** Entries don't carry a partner of their own — take the first line that names one. */
+function entryPartnerId(entry: JournalEntry): number | null {
+  return entry.lines.find((line) => line.partnerId !== null)?.partnerId ?? null
+}
 
 export function JournalEntryListPage() {
   const { data: entries, isLoading, isError } = useJournalEntries()
   const { data: journals } = useJournals()
   const { data: accounts } = useAccounts()
   const { data: contacts } = useContacts()
+  const [openEntry, setOpenEntry] = useState<JournalEntry | null>(null)
 
   const journalName = (id: number) => journals?.find((j) => j.id === id)?.name ?? `Journal ${id}`
   const accountLabel = (id: number) => {
@@ -27,32 +48,62 @@ export function JournalEntryListPage() {
     return contacts?.find((c) => c.id === id)?.name ?? `Contact ${id}`
   }
 
+  const columns: ColumnDef<JournalEntry, unknown>[] = [
+    {
+      accessorKey: 'reference',
+      header: 'Reference',
+      cell: ({ row }) => row.original.reference.replace(/#/g, ''),
+    },
+    {
+      id: 'journal',
+      header: 'Journal',
+      cell: ({ row }) => journalName(row.original.journalId),
+    },
+    {
+      id: 'partner',
+      header: 'Partner',
+      cell: ({ row }) => partnerLabel(entryPartnerId(row.original)),
+    },
+    {
+      id: 'total',
+      header: 'Total',
+      cell: ({ row }) => <CurrencyText amount={entryTotal(row.original)} />,
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+    },
+  ]
+
   return (
     <div>
       <PageHeader
         title="Journal Entries"
-        description="Double-entry accounting records, generated automatically when vendor bills are posted"
+        description="Double-entry accounting records, generated automatically when vendor bills, customer invoices, and payments are posted"
       />
 
       {isLoading && <LoadingState />}
       {isError && <ErrorState message="Failed to load journal entries." />}
-      {entries && entries.length === 0 && (
-        <EmptyState
-          title="No journal entries yet"
-          description="Entries appear here once a vendor bill is posted."
+      {entries && (
+        <DataTable
+          columns={columns}
+          data={entries}
+          onRowClick={setOpenEntry}
+          searchPlaceholder="Search journal entries..."
+          emptyTitle="No journal entries yet"
+          emptyDescription="Entries appear here once a vendor bill, invoice, or payment is posted."
         />
       )}
 
-      <div className="flex flex-col gap-4">
-        {entries?.map((entry) => (
-          <Card key={entry.id}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">
-                {entry.reference.replace(/#/g, '')} — {journalName(entry.journalId)}
-              </CardTitle>
-              <StatusBadge status={entry.status} />
-            </CardHeader>
-            <CardContent>
+      <Dialog open={openEntry !== null} onOpenChange={(open) => !open && setOpenEntry(null)}>
+        <DialogContent className="sm:max-w-lg">
+          {openEntry && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{openEntry.reference.replace(/#/g, '')}</DialogTitle>
+                <DialogDescription>{journalName(openEntry.journalId)}</DialogDescription>
+              </DialogHeader>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -63,7 +114,7 @@ export function JournalEntryListPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {entry.lines.map((line) => (
+                  {openEntry.lines.map((line) => (
                     <TableRow key={line.id}>
                       <TableCell>{accountLabel(line.accountId)}</TableCell>
                       <TableCell className="text-muted-foreground">{partnerLabel(line.partnerId)}</TableCell>
@@ -77,10 +128,10 @@ export function JournalEntryListPage() {
                   ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
