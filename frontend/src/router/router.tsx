@@ -81,6 +81,7 @@ export const router = createBrowserRouter([
 
           { path: 'payments', element: <PaymentListPage /> },
           { path: 'payments/new', element: <PaymentFormPage /> },
+          { path: 'payments/:id', element: <PaymentFormPage /> },
 
           { path: 'budgets/analytic-accounts', element: <AnalyticAccountListPage /> },
           { path: 'budgets/analytic-accounts/new', element: <AnalyticAccountFormPage /> },
