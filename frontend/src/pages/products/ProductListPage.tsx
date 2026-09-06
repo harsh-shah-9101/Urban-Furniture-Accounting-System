@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DataTable } from '@/components/data-display/DataTable'
@@ -7,6 +6,7 @@ import { ViewToggle, type DataViewMode } from '@/components/data-display/ViewTog
 import { CurrencyText } from '@/components/data-display/CurrencyText'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,8 +17,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus } from 'lucide-react'
-import { useProducts, useCreateProduct } from '@/features/products/hooks'
+import { MoreHorizontal, Pencil, Trash2, Plus } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '@/features/products/hooks'
 import { ProductKanbanView } from '@/features/products/components/ProductKanbanView'
 import { ProductForm } from '@/features/products/components/ProductForm'
 import type { Product } from '@/types/product'
@@ -37,13 +43,44 @@ function readStoredView(): DataViewMode {
   return stored === 'kanban' ? 'kanban' : 'list'
 }
 
+function EditProductDialog({ product, onClose }: { product: Product; onClose: () => void }) {
+  const updateProduct = useUpdateProduct(product.id)
+
+  function handleSubmit(values: ProductFormValues) {
+    updateProduct.mutate(values, { onSuccess: onClose })
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Edit Product</DialogTitle>
+        </DialogHeader>
+        <ProductForm
+          defaultValues={{
+            name: product.name,
+            type: product.type,
+            salesPrice: product.salesPrice,
+            cost: product.cost,
+            category: product.category,
+          }}
+          onSubmit={handleSubmit}
+          isSubmitting={updateProduct.isPending}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function ProductListPage() {
   const { data: products, isLoading, isError } = useProducts()
   const createProduct = useCreateProduct()
-  const navigate = useNavigate()
+  const deleteProduct = useDeleteProduct()
   const [view, setView] = useState<DataViewMode>(readStoredView)
   const [search, setSearch] = useState('')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
 
   function handleViewChange(next: DataViewMode) {
     setView(next)
@@ -51,14 +88,9 @@ export function ProductListPage() {
   }
 
   function handleCreateSubmit(values: ProductFormValues) {
-    const input = {
-      ...values,
-      description: values.description || null,
-      imageUrl: values.imageUrl || null,
-    }
-    createProduct.mutate(input, {
+    createProduct.mutate({ ...values, imageUrl: null }, {
       onSuccess: () => {
-        setIsDialogOpen(false)
+        setIsCreateOpen(false)
       },
     })
   }
@@ -92,6 +124,31 @@ export function ProductListPage() {
       header: 'Cost',
       cell: ({ row }) => <CurrencyText amount={row.original.cost} />,
     },
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setEditingProduct(row.original)}>
+                <Pencil className="mr-2 h-4 w-4" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => setDeletingProduct(row.original)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
   ]
 
   return (
@@ -100,13 +157,15 @@ export function ProductListPage() {
         title="Products"
         description="Goods, services, and combos"
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Product
-              </Button>
-            </DialogTrigger>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger
+              render={
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Product
+                </Button>
+              }
+            />
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>New Product</DialogTitle>
@@ -146,6 +205,22 @@ export function ProductListPage() {
           )}
         </div>
       )}
+
+      {editingProduct && (
+        <EditProductDialog product={editingProduct} onClose={() => setEditingProduct(null)} />
+      )}
+
+      <ConfirmDialog
+        open={deletingProduct !== null}
+        onOpenChange={(open) => !open && setDeletingProduct(null)}
+        title={`Delete ${deletingProduct?.name}?`}
+        description="This permanently removes the product. This can't be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deletingProduct) deleteProduct.mutate(deletingProduct.id)
+        }}
+      />
     </div>
   )
 }

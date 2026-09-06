@@ -8,6 +8,8 @@ export interface Product {
   salesPrice: number
   cost: number
   imageUrl: string | null
+  archived: boolean
 }
 
-export type ProductInput = Omit<Product, 'id'>
+export type ProductInput = Omit<Product, 'id' | 'archived'>
+export type ProductUpdateInput = Partial<ProductInput>

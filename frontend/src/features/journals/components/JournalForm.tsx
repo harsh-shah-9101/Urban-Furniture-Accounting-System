@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { useAccounts } from '@/features/accounts/hooks'
-import { accountFieldsForType } from '../defaultAccount'
+import { accountFieldsForType, defaultAccountIdFor } from '../defaultAccount'
 import { journalSchema, type JournalFormValues } from '../schema'
 
 const JOURNAL_TYPE_LABELS: Record<JournalFormValues['type'], string> = {
@@ -21,14 +21,24 @@ const JOURNAL_TYPE_LABELS: Record<JournalFormValues['type'], string> = {
 const NONE = 'none'
 
 export function JournalForm({
+  defaultValues,
   onSubmit,
   isSubmitting,
 }: {
+  defaultValues?: Partial<JournalFormValues>
   onSubmit: (values: JournalFormValues) => void
   isSubmitting?: boolean
 }) {
   const { data: accounts } = useAccounts()
-  const [defaultAccountId, setDefaultAccountId] = useState<number | null>(null)
+  const [defaultAccountId, setDefaultAccountId] = useState<number | null>(() =>
+    defaultValues
+      ? defaultAccountIdFor(
+          defaultValues.type ?? 'general',
+          defaultValues.defaultDebitAccountId ?? null,
+          defaultValues.defaultCreditAccountId ?? null,
+        )
+      : null,
+  )
 
   const accountLabel = (value: string) => {
     if (value === NONE) return 'None'
@@ -43,6 +53,7 @@ export function JournalForm({
       type: 'general',
       defaultDebitAccountId: null,
       defaultCreditAccountId: null,
+      ...defaultValues,
     },
   })
 

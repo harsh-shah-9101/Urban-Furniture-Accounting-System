@@ -1,31 +1,38 @@
-import { apiGet, apiPost, roleHeaders } from '@/lib/http'
+import { apiDelete, apiGet, apiPatch, apiPost, roleHeaders } from '@/lib/http'
 import type { BackendUserRole } from '@/types/auth'
-import type { AnalyticAccount, AnalyticAccountInput } from '@/types/accounting'
+import type { AnalyticAccount, AnalyticAccountInput, AnalyticAccountUpdateInput } from '@/types/accounting'
 
 interface AnalyticAccountDto {
-  id: string
+  id: number
   name: string
-  type: AnalyticAccount['type']
+  code: string
+  description: string | null
   archived: boolean
-  created_at: string
-  updated_at: string
 }
 
 function fromDto(dto: AnalyticAccountDto): AnalyticAccount {
   return {
     id: dto.id,
     name: dto.name,
-    type: dto.type,
+    code: dto.code,
+    description: dto.description,
     archived: dto.archived,
-    createdAt: dto.created_at,
-    updatedAt: dto.updated_at,
   }
 }
 
 function toDto(input: AnalyticAccountInput) {
   return {
     name: input.name,
-    type: input.type,
+    code: input.code,
+    description: input.description || null,
+  }
+}
+
+function toUpdateDto(input: AnalyticAccountUpdateInput) {
+  return {
+    ...(input.name !== undefined && { name: input.name }),
+    ...(input.code !== undefined && { code: input.code }),
+    ...(input.description !== undefined && { description: input.description || null }),
   }
 }
 
@@ -34,8 +41,19 @@ export const analyticAccountsApi = {
     const dtos = await apiGet<AnalyticAccountDto[]>('/analytic-accounts', roleHeaders(role))
     return dtos.map(fromDto)
   },
+  get: async (id: number, role?: BackendUserRole) => {
+    const dto = await apiGet<AnalyticAccountDto>(`/analytic-accounts/${id}`, roleHeaders(role))
+    return fromDto(dto)
+  },
   create: async (input: AnalyticAccountInput, role?: BackendUserRole) => {
     const dto = await apiPost<AnalyticAccountDto>('/analytic-accounts', toDto(input), roleHeaders(role))
     return fromDto(dto)
+  },
+  update: async (id: number, input: AnalyticAccountUpdateInput, role?: BackendUserRole) => {
+    const dto = await apiPatch<AnalyticAccountDto>(`/analytic-accounts/${id}`, toUpdateDto(input), roleHeaders(role))
+    return fromDto(dto)
+  },
+  remove: async (id: number, role?: BackendUserRole) => {
+    await apiDelete<void>(`/analytic-accounts/${id}`, roleHeaders(role))
   },
 }

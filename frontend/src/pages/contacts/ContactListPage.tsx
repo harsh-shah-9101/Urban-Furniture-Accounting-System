@@ -6,6 +6,7 @@ import { DataTable } from '@/components/data-display/DataTable'
 import { ViewToggle, type DataViewMode } from '@/components/data-display/ViewToggle'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useContacts, useCreateContact } from '@/features/contacts/hooks'
+import { useContacts, useCreateContact, useUpdateContact, useDeleteContact } from '@/features/contacts/hooks'
 import { ContactKanbanView } from '@/features/contacts/components/ContactKanbanView'
 import { ContactForm } from '@/features/contacts/components/ContactForm'
 import type { Contact } from '@/types/contact'
@@ -42,13 +43,59 @@ function readStoredView(): DataViewMode {
   return stored === 'kanban' ? 'kanban' : 'list'
 }
 
+function toContactInput(values: ContactFormValues) {
+  return {
+    ...values,
+    mobile: values.mobile || null,
+    city: values.city || null,
+    state: values.state || null,
+    pincode: values.pincode || null,
+    profileImageUrl: values.profileImageUrl || null,
+  }
+}
+
+function EditContactDialog({ contact, onClose }: { contact: Contact; onClose: () => void }) {
+  const updateContact = useUpdateContact(contact.id)
+
+  function handleSubmit(values: ContactFormValues) {
+    updateContact.mutate(toContactInput(values), { onSuccess: onClose })
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Edit Contact</DialogTitle>
+        </DialogHeader>
+        <ContactForm
+          defaultValues={{
+            name: contact.name,
+            type: contact.type,
+            email: contact.email,
+            mobile: contact.mobile ?? '',
+            city: contact.city ?? '',
+            state: contact.state ?? '',
+            pincode: contact.pincode ?? '',
+            profileImageUrl: contact.profileImageUrl ?? '',
+          }}
+          onSubmit={handleSubmit}
+          isSubmitting={updateContact.isPending}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function ContactListPage() {
   const { data: contacts, isLoading, isError } = useContacts()
   const createContact = useCreateContact()
+  const deleteContact = useDeleteContact()
   const navigate = useNavigate()
   const [view, setView] = useState<DataViewMode>(readStoredView)
   const [search, setSearch] = useState('')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const [deletingContact, setDeletingContact] = useState<Contact | null>(null)
 
   function handleViewChange(next: DataViewMode) {
     setView(next)
@@ -56,18 +103,8 @@ export function ContactListPage() {
   }
 
   function handleCreateSubmit(values: ContactFormValues) {
-    const input = {
-      ...values,
-      mobile: values.mobile || null,
-      city: values.city || null,
-      state: values.state || null,
-      pincode: values.pincode || null,
-      profileImageUrl: values.profileImageUrl || null,
-    }
-    createContact.mutate(input, {
-      onSuccess: () => {
-        setIsDialogOpen(false)
-      },
+    createContact.mutate(toContactInput(values), {
+      onSuccess: () => setIsCreateOpen(false),
     })
   }
 
@@ -127,20 +164,25 @@ export function ContactListPage() {
         return (
           <div className="text-right">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                  <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                }
+              />
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/contacts/${row.original.id}`); }}>
                   <Eye className="mr-2 h-4 w-4" /> View
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/contacts/${row.original.id}/edit`); }}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingContact(row.original); }}>
                   <Pencil className="mr-2 h-4 w-4" /> Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }} className="text-destructive">
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={(e) => { e.stopPropagation(); setDeletingContact(row.original); }}
+                >
                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -157,13 +199,15 @@ export function ContactListPage() {
         title="Contacts"
         description="Customers and vendors"
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Contact
-              </Button>
-            </DialogTrigger>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger
+              render={
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Contact
+                </Button>
+              }
+            />
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>New Contact</DialogTitle>
@@ -210,6 +254,22 @@ export function ContactListPage() {
           )}
         </div>
       )}
+
+      {editingContact && (
+        <EditContactDialog contact={editingContact} onClose={() => setEditingContact(null)} />
+      )}
+
+      <ConfirmDialog
+        open={deletingContact !== null}
+        onOpenChange={(open) => !open && setDeletingContact(null)}
+        title={`Delete ${deletingContact?.name}?`}
+        description="This permanently removes the contact. This can't be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deletingContact) deleteContact.mutate(deletingContact.id)
+        }}
+      />
     </div>
   )
 }

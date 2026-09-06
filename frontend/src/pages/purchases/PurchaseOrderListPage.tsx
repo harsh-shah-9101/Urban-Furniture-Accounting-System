@@ -64,12 +64,14 @@ export function PurchaseOrderListPage() {
         title="Purchase Orders"
         actions={
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Purchase Order
-              </Button>
-            </DialogTrigger>
+            <DialogTrigger
+              render={
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Purchase Order
+                </Button>
+              }
+            />
             <DialogContent className="sm:max-w-[800px]">
               <DialogHeader>
                 <DialogTitle>New Purchase Order</DialogTitle>

@@ -4,26 +4,21 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { DataTable } from '@/components/data-display/DataTable'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAnalyticAccounts } from '@/features/budgets/analytic-accounts/hooks'
 import type { AnalyticAccount } from '@/types/accounting'
-
-const TYPE_LABELS: Record<AnalyticAccount['type'], string> = {
-  income: 'Income',
-  expense: 'Expenses',
-}
 
 export function AnalyticAccountListPage() {
   const { data: accounts, isLoading, isError } = useAnalyticAccounts()
   const navigate = useNavigate()
 
   const columns: ColumnDef<AnalyticAccount, unknown>[] = [
+    { accessorKey: 'code', header: 'Code' },
     { accessorKey: 'name', header: 'Name' },
     {
-      accessorKey: 'type',
-      header: 'Type',
-      cell: ({ row }) => <Badge variant="secondary">{TYPE_LABELS[row.original.type]}</Badge>,
+      accessorKey: 'description',
+      header: 'Description',
+      cell: ({ row }) => row.original.description ?? '—',
     },
   ]
 

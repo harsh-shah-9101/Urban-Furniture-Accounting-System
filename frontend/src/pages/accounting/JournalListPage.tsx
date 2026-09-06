@@ -1,9 +1,10 @@
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DataTable } from '@/components/data-display/DataTable'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,14 +14,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus } from 'lucide-react'
-import { useJournals, useCreateJournal } from '@/features/journals/hooks'
+import { MoreHorizontal, Pencil, Trash2, Plus } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useJournals, useCreateJournal, useUpdateJournal, useDeleteJournal } from '@/features/journals/hooks'
 import { useAccounts } from '@/features/accounts/hooks'
 import { defaultAccountIdFor } from '@/features/journals/defaultAccount'
 import { JournalForm } from '@/features/journals/components/JournalForm'
 import type { Journal } from '@/types/accounting'
 import type { JournalFormValues } from '@/features/journals/schema'
-import { useState } from 'react'
 
 const TYPE_LABELS: Record<Journal['type'], string> = {
   sales: 'Sales',
@@ -30,22 +36,55 @@ const TYPE_LABELS: Record<Journal['type'], string> = {
   general: 'General',
 }
 
+function toJournalInput(values: JournalFormValues) {
+  return {
+    ...values,
+    defaultDebitAccountId: values.defaultDebitAccountId || null,
+    defaultCreditAccountId: values.defaultCreditAccountId || null,
+  }
+}
+
+function EditJournalDialog({ journal, onClose }: { journal: Journal; onClose: () => void }) {
+  const updateJournal = useUpdateJournal(journal.id)
+
+  function handleSubmit(values: JournalFormValues) {
+    updateJournal.mutate(toJournalInput(values), { onSuccess: onClose })
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Edit Journal</DialogTitle>
+        </DialogHeader>
+        <JournalForm
+          defaultValues={{
+            name: journal.name,
+            type: journal.type,
+            defaultDebitAccountId: journal.defaultDebitAccountId,
+            defaultCreditAccountId: journal.defaultCreditAccountId,
+          }}
+          onSubmit={handleSubmit}
+          isSubmitting={updateJournal.isPending}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function JournalListPage() {
   const { data: journals, isLoading, isError } = useJournals()
   const { data: accounts } = useAccounts()
   const createJournal = useCreateJournal()
-  const navigate = useNavigate()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const deleteJournal = useDeleteJournal()
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingJournal, setEditingJournal] = useState<Journal | null>(null)
+  const [deletingJournal, setDeletingJournal] = useState<Journal | null>(null)
 
   function handleCreateSubmit(values: JournalFormValues) {
-    const input = {
-      ...values,
-      defaultDebitAccountId: values.defaultDebitAccountId || null,
-      defaultCreditAccountId: values.defaultCreditAccountId || null,
-    }
-    createJournal.mutate(input, {
+    createJournal.mutate(toJournalInput(values), {
       onSuccess: () => {
-        setIsDialogOpen(false)
+        setIsCreateOpen(false)
       },
     })
   }
@@ -71,6 +110,31 @@ export function JournalListPage() {
         return `${account.code} — ${account.name}`
       },
     },
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setEditingJournal(row.original)}>
+                <Pencil className="mr-2 h-4 w-4" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => setDeletingJournal(row.original)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
   ]
 
   return (
@@ -79,13 +143,15 @@ export function JournalListPage() {
         title="Journals"
         description="Sales, Purchase, Bank, and Cash journals"
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Journal
-              </Button>
-            </DialogTrigger>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger
+              render={
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Journal
+                </Button>
+              }
+            />
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>New Journal</DialogTitle>
@@ -107,6 +173,22 @@ export function JournalListPage() {
           emptyDescription="Add your first journal to get started."
         />
       )}
+
+      {editingJournal && (
+        <EditJournalDialog journal={editingJournal} onClose={() => setEditingJournal(null)} />
+      )}
+
+      <ConfirmDialog
+        open={deletingJournal !== null}
+        onOpenChange={(open) => !open && setDeletingJournal(null)}
+        title={`Delete ${deletingJournal?.name}?`}
+        description="This permanently removes the journal. This can't be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deletingJournal) deleteJournal.mutate(deletingJournal.id)
+        }}
+      />
     </div>
   )
 }

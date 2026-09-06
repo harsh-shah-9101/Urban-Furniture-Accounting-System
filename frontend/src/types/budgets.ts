@@ -1,14 +1,14 @@
-import type { ID, Timestamped } from './common'
-
-export interface Budget extends Timestamped {
-  id: ID
+export interface Budget {
+  id: number
   name: string
-  analyticAccountId: string
-  periodStart: string
-  periodEnd: string
-  responsiblePerson: string
-  plannedAmount: number
+  analyticAccountId: number | null
+  budgetAmount: number
+  spentAmount: number
+  remainingAmount: number
+  startDate: string | null
+  endDate: string | null
   archived: boolean
 }
 
-export type BudgetInput = Omit<Budget, 'id' | 'createdAt' | 'updatedAt' | 'archived'>
+export type BudgetInput = Omit<Budget, 'id' | 'spentAmount' | 'remainingAmount' | 'archived'>
+export type BudgetUpdateInput = Partial<Omit<Budget, 'id' | 'archived'>>

@@ -10,6 +10,8 @@ export interface Contact {
   state: string | null
   pincode: string | null
   profileImageUrl: string | null
+  archived: boolean
 }
 
-export type ContactInput = Omit<Contact, 'id'>
+export type ContactInput = Omit<Contact, 'id' | 'archived'>
+export type ContactUpdateInput = Partial<ContactInput>

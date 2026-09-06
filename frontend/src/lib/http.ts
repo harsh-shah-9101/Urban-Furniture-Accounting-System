@@ -71,3 +71,21 @@ export async function apiPost<TResponse>(
   })
   return handleResponse<TResponse>(res)
 }
+
+export async function apiPatch<TResponse>(
+  path: string,
+  body: unknown,
+  headers?: Record<string, string>,
+): Promise<TResponse> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+  })
+  return handleResponse<TResponse>(res)
+}
+
+export async function apiDelete<TResponse>(path: string, headers?: Record<string, string>): Promise<TResponse> {
+  const res = await fetch(`${API_BASE_URL}${path}`, { method: 'DELETE', headers })
+  return handleResponse<TResponse>(res)
+}

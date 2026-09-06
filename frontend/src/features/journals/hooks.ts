@@ -4,23 +4,50 @@ import { journalsApi } from './api'
 import { journalKeys } from './query-keys'
 import { useAuth } from '@/features/auth/useAuth'
 import { toBackendRole } from '@/features/auth/roles'
-import type { JournalInput } from '@/types/accounting'
+import type { JournalInput, JournalUpdateInput } from '@/types/accounting'
+
+function useRole() {
+  const { user } = useAuth()
+  return user ? toBackendRole(user.role) : undefined
+}
 
 export function useJournals() {
-  const { user } = useAuth()
-  const role = user ? toBackendRole(user.role) : undefined
+  const role = useRole()
   return useQuery({ queryKey: journalKeys.lists(), queryFn: () => journalsApi.list(role) })
 }
 
 export function useCreateJournal() {
-  const { user } = useAuth()
-  const role = user ? toBackendRole(user.role) : undefined
+  const role = useRole()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: JournalInput) => journalsApi.create(input, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: journalKeys.lists() })
       toast.success('Journal created')
+    },
+  })
+}
+
+export function useUpdateJournal(id: number) {
+  const role = useRole()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: JournalUpdateInput) => journalsApi.update(id, input, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: journalKeys.lists() })
+      toast.success('Journal updated')
+    },
+  })
+}
+
+export function useDeleteJournal() {
+  const role = useRole()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => journalsApi.remove(id, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: journalKeys.lists() })
+      toast.success('Journal deleted')
     },
   })
 }

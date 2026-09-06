@@ -1,9 +1,10 @@
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DataTable } from '@/components/data-display/DataTable'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,12 +14,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus } from 'lucide-react'
-import { useAccounts, useCreateAccount } from '@/features/accounts/hooks'
+import { MoreHorizontal, Pencil, Trash2, Plus } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useAccounts, useCreateAccount, useUpdateAccount, useDeleteAccount } from '@/features/accounts/hooks'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import type { Account } from '@/types/accounting'
 import type { AccountFormValues } from '@/features/accounts/schema'
-import { useState } from 'react'
 
 const TYPE_LABELS: Record<Account['type'], string> = {
   asset: 'Asset',
@@ -28,16 +34,41 @@ const TYPE_LABELS: Record<Account['type'], string> = {
   capital: 'Capital',
 }
 
+function EditAccountDialog({ account, onClose }: { account: Account; onClose: () => void }) {
+  const updateAccount = useUpdateAccount(account.id)
+
+  function handleSubmit(values: AccountFormValues) {
+    updateAccount.mutate(values, { onSuccess: onClose })
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Edit Account</DialogTitle>
+        </DialogHeader>
+        <AccountForm
+          defaultValues={{ code: account.code, name: account.name, type: account.type }}
+          onSubmit={handleSubmit}
+          isSubmitting={updateAccount.isPending}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function ChartOfAccountsPage() {
   const { data: accounts, isLoading, isError } = useAccounts()
   const createAccount = useCreateAccount()
-  const navigate = useNavigate()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const deleteAccount = useDeleteAccount()
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null)
+  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null)
 
   function handleCreateSubmit(values: AccountFormValues) {
     createAccount.mutate(values, {
       onSuccess: () => {
-        setIsDialogOpen(false)
+        setIsCreateOpen(false)
       },
     })
   }
@@ -50,6 +81,31 @@ export function ChartOfAccountsPage() {
       header: 'Type',
       cell: ({ row }) => <Badge variant="secondary">{TYPE_LABELS[row.original.type]}</Badge>,
     },
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setEditingAccount(row.original)}>
+                <Pencil className="mr-2 h-4 w-4" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => setDeletingAccount(row.original)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
   ]
 
   return (
@@ -58,13 +114,15 @@ export function ChartOfAccountsPage() {
         title="Chart of Accounts"
         description="Master list of ledger accounts"
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Account
-              </Button>
-            </DialogTrigger>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger
+              render={
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Account
+                </Button>
+              }
+            />
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>New Account</DialogTitle>
@@ -86,6 +144,22 @@ export function ChartOfAccountsPage() {
           emptyDescription="Add your first ledger account to get started."
         />
       )}
+
+      {editingAccount && (
+        <EditAccountDialog account={editingAccount} onClose={() => setEditingAccount(null)} />
+      )}
+
+      <ConfirmDialog
+        open={deletingAccount !== null}
+        onOpenChange={(open) => !open && setDeletingAccount(null)}
+        title={`Delete ${deletingAccount?.name}?`}
+        description="This permanently removes the account. This can't be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deletingAccount) deleteAccount.mutate(deletingAccount.id)
+        }}
+      />
     </div>
   )
 }

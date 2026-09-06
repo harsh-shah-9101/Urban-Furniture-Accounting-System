@@ -24,11 +24,10 @@ export function BudgetForm({
     resolver: zodResolver(budgetSchema),
     defaultValues: {
       name: '',
-      analyticAccountId: '',
-      periodStart: '',
-      periodEnd: '',
-      responsiblePerson: '',
-      plannedAmount: 0,
+      analyticAccountId: 0,
+      budgetAmount: 0,
+      startDate: '',
+      endDate: '',
       ...defaultValues,
     },
   })
@@ -42,16 +41,19 @@ export function BudgetForm({
 
         <FormField control={form.control} name="analyticAccountId" label="Analytic Account">
           {(field) => (
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select
+              value={field.value ? String(field.value) : ''}
+              onValueChange={(value) => field.onChange(Number(value))}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select analytic account">
-                  {(value: string) => analyticAccounts?.find((account) => account.id === value)?.name}
+                  {(value: string) => analyticAccounts?.find((account) => account.id === Number(value))?.name}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {analyticAccounts?.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
+                  <SelectItem key={account.id} value={String(account.id)}>
+                    {account.code} — {account.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -60,19 +62,15 @@ export function BudgetForm({
         </FormField>
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField control={form.control} name="periodStart" label="Period Start">
+          <FormField control={form.control} name="startDate" label="Start Date">
             {(field) => <Input type="date" {...field} />}
           </FormField>
-          <FormField control={form.control} name="periodEnd" label="Period End">
+          <FormField control={form.control} name="endDate" label="End Date">
             {(field) => <Input type="date" {...field} />}
           </FormField>
         </div>
 
-        <FormField control={form.control} name="responsiblePerson" label="Responsible Person">
-          {(field) => <Input {...field} placeholder="e.g. Priya Sharma" />}
-        </FormField>
-
-        <FormField control={form.control} name="plannedAmount" label="Planned Amount">
+        <FormField control={form.control} name="budgetAmount" label="Budget Amount">
           {(field) => (
             <CurrencyInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
           )}

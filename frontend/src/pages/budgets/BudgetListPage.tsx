@@ -6,6 +6,8 @@ import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { CurrencyText } from '@/components/data-display/CurrencyText'
 import { Button } from '@/components/ui/button'
+import { formatDate } from '@/lib/formatters'
+import { cn } from '@/lib/utils'
 import { useBudgets } from '@/features/budgets/budgets/hooks'
 import { useAnalyticAccounts } from '@/features/budgets/analytic-accounts/hooks'
 import type { Budget } from '@/types/budgets'
@@ -15,8 +17,8 @@ export function BudgetListPage() {
   const { data: analyticAccounts } = useAnalyticAccounts()
   const navigate = useNavigate()
 
-  const analyticAccountName = (id: string) =>
-    analyticAccounts?.find((account) => account.id === id)?.name ?? `Analytic Account ${id}`
+  const analyticAccountName = (id: number | null) =>
+    analyticAccounts?.find((account) => account.id === id)?.name ?? (id !== null ? `Account ${id}` : '—')
 
   const columns: ColumnDef<Budget, unknown>[] = [
     { accessorKey: 'name', header: 'Budget Name' },
@@ -28,13 +30,30 @@ export function BudgetListPage() {
     {
       id: 'period',
       header: 'Period',
-      cell: ({ row }) => `${row.original.periodStart} to ${row.original.periodEnd}`,
+      cell: ({ row }) =>
+        row.original.startDate && row.original.endDate
+          ? `${formatDate(row.original.startDate)} – ${formatDate(row.original.endDate)}`
+          : '—',
     },
-    { accessorKey: 'responsiblePerson', header: 'Responsible Person' },
     {
-      id: 'plannedAmount',
-      header: 'Planned Amount',
-      cell: ({ row }) => <CurrencyText amount={row.original.plannedAmount} />,
+      id: 'budgetAmount',
+      header: 'Budget',
+      cell: ({ row }) => <CurrencyText amount={row.original.budgetAmount} />,
+    },
+    {
+      id: 'spentAmount',
+      header: 'Spent',
+      cell: ({ row }) => <CurrencyText amount={row.original.spentAmount} />,
+    },
+    {
+      id: 'remainingAmount',
+      header: 'Remaining',
+      cell: ({ row }) => (
+        <CurrencyText
+          amount={row.original.remainingAmount}
+          className={cn(row.original.remainingAmount < 0 && 'text-destructive')}
+        />
+      ),
     },
   ]
 

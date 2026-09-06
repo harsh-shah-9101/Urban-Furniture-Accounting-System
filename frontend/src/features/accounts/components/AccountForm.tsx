@@ -16,15 +16,17 @@ const ACCOUNT_TYPE_LABELS: Record<AccountFormValues['type'], string> = {
 }
 
 export function AccountForm({
+  defaultValues,
   onSubmit,
   isSubmitting,
 }: {
+  defaultValues?: Partial<AccountFormValues>
   onSubmit: (values: AccountFormValues) => void
   isSubmitting?: boolean
 }) {
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
-    defaultValues: { code: '', name: '', type: 'asset' },
+    defaultValues: { code: '', name: '', type: 'asset', ...defaultValues },
   })
 
   return (

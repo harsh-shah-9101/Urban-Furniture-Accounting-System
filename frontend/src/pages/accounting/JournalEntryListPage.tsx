@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DataTable } from '@/components/data-display/DataTable'
@@ -14,11 +15,18 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatDate } from '@/lib/formatters'
 import { useJournalEntries } from '@/features/journal-entries/hooks'
 import { useJournals } from '@/features/journals/hooks'
 import { useAccounts } from '@/features/accounts/hooks'
 import { useContacts } from '@/features/contacts/hooks'
-import type { JournalEntry } from '@/types/accounting'
+import type { JournalEntry, JournalEntrySourceType } from '@/types/accounting'
+
+const SOURCE_PATH: Record<JournalEntrySourceType, string> = {
+  vendor_bill: '/purchases/bills',
+  customer_invoice: '/sales/invoices',
+  payment: '/payments',
+}
 
 /** A balanced entry's debit and credit lines sum to the same figure — either works as the total. */
 function entryTotal(entry: JournalEntry): number {
@@ -52,7 +60,25 @@ export function JournalEntryListPage() {
     {
       accessorKey: 'reference',
       header: 'Reference',
-      cell: ({ row }) => row.original.reference.replace(/#/g, ''),
+      cell: ({ row }) => {
+        const { sourceType, sourceId } = row.original
+        const label = row.original.reference.replace(/#/g, '')
+        if (!sourceType || !sourceId) return label
+        return (
+          <Link
+            to={`${SOURCE_PATH[sourceType]}/${sourceId}`}
+            className="text-primary hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {label}
+          </Link>
+        )
+      },
+    },
+    {
+      accessorKey: 'entryDate',
+      header: 'Date',
+      cell: ({ row }) => formatDate(row.original.entryDate),
     },
     {
       id: 'journal',

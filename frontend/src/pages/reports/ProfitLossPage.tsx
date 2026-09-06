@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { CurrencyText } from '@/components/data-display/CurrencyText'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'

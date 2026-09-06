@@ -1,6 +1,6 @@
 import { apiGet, roleHeaders } from '@/lib/http'
 import type { BackendUserRole } from '@/types/auth'
-import type { JournalEntry, JournalEntryLine } from '@/types/accounting'
+import type { JournalEntry, JournalEntryLine, JournalEntrySourceType } from '@/types/accounting'
 
 interface JournalEntryLineDto {
   id: number
@@ -14,7 +14,10 @@ interface JournalEntryDto {
   id: number
   journal_id: number
   reference: string
+  entry_date: string
   status: string
+  source_type: JournalEntrySourceType | null
+  source_id: number | null
   lines: JournalEntryLineDto[]
 }
 
@@ -33,7 +36,10 @@ function fromDto(dto: JournalEntryDto): JournalEntry {
     id: dto.id,
     journalId: dto.journal_id,
     reference: dto.reference,
+    entryDate: dto.entry_date,
     status: dto.status,
+    sourceType: dto.source_type,
+    sourceId: dto.source_id,
     lines: dto.lines.map(fromLineDto),
   }
 }
