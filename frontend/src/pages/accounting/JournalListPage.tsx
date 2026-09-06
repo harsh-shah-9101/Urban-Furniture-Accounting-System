@@ -14,13 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { MoreHorizontal, Pencil, Trash2, Plus } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Pencil, Trash2, Plus } from 'lucide-react'
 import { useJournals, useCreateJournal, useUpdateJournal, useDeleteJournal } from '@/features/journals/hooks'
 import { useAccounts } from '@/features/accounts/hooks'
 import { defaultAccountIdFor } from '@/features/journals/defaultAccount'
@@ -113,25 +107,26 @@ export function JournalListPage() {
     {
       id: 'actions',
       cell: ({ row }) => (
-        <div className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditingJournal(row.original)}>
-                <Pencil className="mr-2 h-4 w-4" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onClick={() => setDeletingJournal(row.original)}>
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Edit"
+            onClick={() => setEditingJournal(row.original)}
+          >
+            <span className="sr-only">Edit</span>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            title="Delete"
+            onClick={() => setDeletingJournal(row.original)}
+          >
+            <span className="sr-only">Delete</span>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       ),
     },

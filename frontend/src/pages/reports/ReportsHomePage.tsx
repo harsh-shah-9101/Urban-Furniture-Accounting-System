@@ -13,28 +13,39 @@ const reports = [
   { to: '/reports/budget', label: 'Budget Report', description: 'Planned vs. actuals by analytic account', icon: PieChart, color: 'text-purple-500', bg: 'bg-purple-500/10' },
 ]
 
-// Mocked historical data for visual flair in the dashboard
-const historicalData = [
-  { month: 'Jan', income: 42000, expense: 28000 },
-  { month: 'Feb', income: 38000, expense: 29000 },
-  { month: 'Mar', income: 51000, expense: 31000 },
-  { month: 'Apr', income: 48000, expense: 30000 },
-  { month: 'May', income: 62000, expense: 35000 },
-  { month: 'Jun', income: 59000, expense: 34000 },
+// Mocked trend for visual flair — proportioned off the real current period so bars stay
+// comparable in scale instead of dwarfing five months of hardcoded small numbers next to it.
+const MONTH_RATIOS = [
+  { month: 'Jan', income: 0.55, expense: 0.62 },
+  { month: 'Feb', income: 0.5, expense: 0.65 },
+  { month: 'Mar', income: 0.68, expense: 0.6 },
+  { month: 'Apr', income: 0.62, expense: 0.58 },
+  { month: 'May', income: 0.78, expense: 0.7 },
 ]
+
+const FALLBACK_INCOME = 62000
+const FALLBACK_EXPENSE = 35000
+
+function formatAxisDollars(value: number) {
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(value % 1000000 === 0 ? 0 : 1)}M`
+  if (value >= 1000) return `$${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`
+  return `$${value}`
+}
 
 export function ReportsHomePage() {
   const { data: summary } = useProfitLoss()
 
-  // Replace the last month of mock data with the real current period data if available
-  const chartData = [...historicalData]
-  if (summary) {
-    chartData[chartData.length - 1] = {
-      month: 'Current',
-      income: summary.income,
-      expense: summary.expense,
-    }
-  }
+  const currentIncome = summary?.income ?? FALLBACK_INCOME
+  const currentExpense = summary?.expense ?? FALLBACK_EXPENSE
+
+  const chartData = [
+    ...MONTH_RATIOS.map(({ month, income, expense }) => ({
+      month,
+      income: Math.round(currentIncome * income),
+      expense: Math.round(currentExpense * expense),
+    })),
+    { month: 'Current', income: currentIncome, expense: currentExpense },
+  ]
 
   return (
     <div className="space-y-6 pb-10">
@@ -57,10 +68,16 @@ export function ReportsHomePage() {
           <CardContent>
             <div className="h-[300px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888888" strokeOpacity={0.2} />
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#888888', fontSize: 12 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#888888', fontSize: 12 }} tickFormatter={(value) => `$${value/1000}k`} />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#888888', fontSize: 12 }}
+                    width={64}
+                    tickFormatter={formatAxisDollars}
+                  />
                   <Tooltip 
                     cursor={{ fill: 'transparent' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}

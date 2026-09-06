@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Mail, MapPin, Phone, type LucideIcon } from 'lucide-react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { cn } from '@/lib/utils'
+import { getAvatarColor, initials } from '@/lib/avatar'
 import type { Contact, ContactType } from '@/types/contact'
 
 type FilterValue = 'all' | ContactType
@@ -16,19 +17,12 @@ const FILTERS: { value: FilterValue; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'customer', label: 'Customers' },
   { value: 'vendor', label: 'Vendors' },
-  { value: 'both', label: 'Both' },
 ]
-
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/)
-  const letters = parts.length > 1 ? [parts[0][0], parts[parts.length - 1][0]] : [parts[0]?.[0]]
-  return letters.filter(Boolean).join('').toUpperCase()
-}
 
 function InfoRow({ icon: Icon, value }: { icon: LucideIcon; value?: string | null }) {
   return (
-    <div className="flex items-center gap-2">
-      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+    <div className="flex items-center gap-2.5">
+      <Icon className="size-3.5 shrink-0 text-muted-foreground/70" />
       <span className="truncate">{value || '—'}</span>
     </div>
   )
@@ -41,28 +35,32 @@ function ContactCard({ contact, onClick }: { contact: Contact; onClick: () => vo
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-foreground/20 hover:bg-muted/30"
+      className="group flex flex-col justify-between rounded-xl border border-border/60 bg-card p-5 text-left transition-all duration-200 hover:border-primary/30 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-primary/5"
     >
-      <div className="flex items-center gap-3">
-        {contact.profileImageUrl ? (
-          <img
-            src={contact.profileImageUrl}
-            alt=""
-            className="size-9 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-            {initials(contact.name) || '?'}
-          </div>
-        )}
+      <div className="flex w-full items-start justify-between gap-4">
+        <div className="flex items-center gap-3.5 min-w-0">
+          {contact.profileImageUrl ? (
+            <img
+              src={contact.profileImageUrl}
+              alt=""
+              className="size-10 shrink-0 rounded-full object-cover ring-1 ring-border/50"
+            />
+          ) : (
+            <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1 ring-border/50", getAvatarColor(contact.name))}>
+              {initials(contact.name) || '?'}
+            </div>
+          )}
 
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{contact.name}</p>
-          <p className="text-xs text-muted-foreground">{TYPE_LABELS[contact.type]}</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-medium leading-none text-foreground">{contact.name}</h3>
+            <p className="mt-1.5 truncate text-xs text-muted-foreground">
+              {TYPE_LABELS[contact.type]} • <span className="font-mono text-muted-foreground/70">#{String(contact.id).padStart(4, '0')}</span>
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 border-t border-border/60 pt-3 text-sm text-foreground">
+      <div className="mt-5 flex flex-col gap-2.5 text-xs text-muted-foreground">
         <InfoRow icon={Mail} value={contact.email} />
         <InfoRow icon={Phone} value={contact.mobile} />
         <InfoRow icon={MapPin} value={location} />
@@ -81,8 +79,10 @@ export function ContactKanbanView({
   const [filter, setFilter] = useState<FilterValue>('all')
 
   const counts = useMemo(() => {
-    const result: Record<FilterValue, number> = { all: contacts.length, customer: 0, vendor: 0, both: 0 }
-    for (const contact of contacts) result[contact.type]++
+    const result: Record<FilterValue, number> = { all: contacts.length, customer: 0, vendor: 0 }
+    for (const contact of contacts) {
+      if (contact.type === 'customer' || contact.type === 'vendor') result[contact.type]++
+    }
     return result
   }, [contacts])
 
@@ -90,7 +90,7 @@ export function ContactKanbanView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="inline-flex w-fit items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
+      <div className="flex flex-wrap items-center gap-2">
         {FILTERS.map(({ value, label }) => {
           const isActive = filter === value
           return (
@@ -100,17 +100,19 @@ export function ContactKanbanView({
               onClick={() => setFilter(value)}
               aria-pressed={isActive}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium transition-colors',
+                'inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 isActive
-                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'bg-background border border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
               {label}
               <span
                 className={cn(
-                  'rounded-full px-1.5 py-0.5 text-xs leading-none',
-                  isActive ? 'bg-muted text-muted-foreground' : 'bg-muted/70 text-muted-foreground'
+                  'ml-2.5 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold',
+                  isActive 
+                    ? 'bg-primary-foreground/20 text-primary-foreground' 
+                    : 'bg-muted-foreground/10 text-muted-foreground'
                 )}
               >
                 {counts[value]}

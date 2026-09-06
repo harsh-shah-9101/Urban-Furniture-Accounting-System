@@ -38,7 +38,8 @@ export function SalesOrderForm({
   const { data: contacts } = useContacts()
   const { data: products } = useProducts()
   const { data: accounts } = useAccounts()
-  const { data: analyticAccounts } = useAnalyticAccounts()
+  const { data: allAnalyticAccounts } = useAnalyticAccounts()
+  const analyticAccounts = allAnalyticAccounts?.filter((account) => account.type === 'income')
   const customers = contacts?.filter((c) => c.type === 'customer' || c.type === 'both') ?? []
 
   const form = useForm<SalesOrderFormValues>({
@@ -64,9 +65,7 @@ export function SalesOrderForm({
                 onValueChange={(value) => field.onChange(Number(value))}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select customer">
-                    {(value: string) => customers.find((c) => String(c.id) === value)?.name}
-                  </SelectValue>
+                  <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((customer) => (
@@ -96,9 +95,7 @@ export function SalesOrderForm({
                       onValueChange={(value) => field.onChange(Number(value))}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select product">
-                          {(value: string) => products?.find((p) => String(p.id) === value)?.name}
-                        </SelectValue>
+                        <SelectValue placeholder="Select product" />
                       </SelectTrigger>
                       <SelectContent>
                         {products?.map((product) => (
@@ -149,13 +146,7 @@ export function SalesOrderForm({
                       onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="None">
-                          {(value: string) =>
-                            value === NONE
-                              ? 'None'
-                              : accounts?.find((a) => String(a.id) === value)?.name
-                          }
-                        </SelectValue>
+                        <SelectValue placeholder="None" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>None</SelectItem>
@@ -180,13 +171,7 @@ export function SalesOrderForm({
                       onValueChange={(value) => field.onChange(value === NONE ? null : Number(value))}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="None">
-                          {(value: string) =>
-                            value === NONE
-                              ? 'None'
-                              : analyticAccounts?.find((a) => String(a.id) === value)?.name
-                          }
-                        </SelectValue>
+                        <SelectValue placeholder="None" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>None</SelectItem>

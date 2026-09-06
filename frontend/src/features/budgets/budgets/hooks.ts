@@ -1,19 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { budgetsApi } from './api'
+import { budgetsStore } from './local-store'
 import { budgetKeys } from './query-keys'
-import { useAuth } from '@/features/auth/useAuth'
-import { toBackendRole } from '@/features/auth/roles'
 import type { BudgetInput, BudgetUpdateInput } from '@/types/budgets'
 
-function useRole() {
-  const { user } = useAuth()
-  return user ? toBackendRole(user.role) : undefined
-}
-
 export function useBudgets() {
-  const role = useRole()
-  return useQuery({ queryKey: budgetKeys.lists(), queryFn: () => budgetsApi.list(role) })
+  return useQuery({ queryKey: budgetKeys.lists(), queryFn: () => budgetsStore.list() })
 }
 
 export function useBudget(id: number) {
@@ -22,10 +14,9 @@ export function useBudget(id: number) {
 }
 
 export function useCreateBudget() {
-  const role = useRole()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: BudgetInput) => budgetsApi.create(input, role),
+    mutationFn: async (input: BudgetInput) => budgetsStore.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.lists() })
       toast.success('Budget created')
@@ -34,10 +25,9 @@ export function useCreateBudget() {
 }
 
 export function useUpdateBudget(id: number) {
-  const role = useRole()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: BudgetUpdateInput) => budgetsApi.update(id, input, role),
+    mutationFn: async (input: BudgetUpdateInput) => budgetsStore.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.lists() })
       toast.success('Budget updated')
@@ -46,13 +36,48 @@ export function useUpdateBudget(id: number) {
 }
 
 export function useDeleteBudget() {
-  const role = useRole()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => budgetsApi.remove(id, role),
+    mutationFn: async (id: number) => budgetsStore.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.lists() })
       toast.success('Budget deleted')
     },
+  })
+}
+
+export function useConfirmBudget(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => budgetsStore.confirm(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: budgetKeys.lists() })
+      toast.success('Budget confirmed')
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+}
+
+export function useCancelBudget(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => budgetsStore.cancel(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: budgetKeys.lists() })
+      toast.success('Budget cancelled')
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+}
+
+export function useReviseBudget(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => budgetsStore.revise(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: budgetKeys.lists() })
+      toast.success('Revised budget created')
+    },
+    onError: (error: Error) => toast.error(error.message),
   })
 }

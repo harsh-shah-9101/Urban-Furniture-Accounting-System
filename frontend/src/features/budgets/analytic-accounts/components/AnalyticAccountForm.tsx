@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Form } from '@/components/ui/form'
 import { FormField } from '@/components/forms/FormField'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { analyticAccountSchema, type AnalyticAccountFormValues } from '../schema'
 
@@ -20,6 +21,7 @@ export function AnalyticAccountForm({
     defaultValues: {
       name: '',
       code: '',
+      type: 'expense',
       description: '',
       ...defaultValues,
     },
@@ -28,12 +30,26 @@ export function AnalyticAccountForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex max-w-lg flex-col gap-4">
-        <FormField control={form.control} name="name" label="Analytic Account Name">
+        <FormField control={form.control} name="name" label="Analytic Account">
           {(field) => <Input {...field} placeholder="e.g. Marketing Department" />}
         </FormField>
 
         <FormField control={form.control} name="code" label="Code">
           {(field) => <Input {...field} placeholder="e.g. MKT-01" />}
+        </FormField>
+
+        <FormField control={form.control} name="type" label="Type">
+          {(field) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="income">Income</SelectItem>
+                <SelectItem value="expense">Expense</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </FormField>
 
         <FormField control={form.control} name="description" label="Description (optional)">

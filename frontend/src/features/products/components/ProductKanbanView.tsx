@@ -1,8 +1,27 @@
-import { useMemo, useState } from 'react'
-import { Package, Receipt, Tag, Wallet } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import {
+  Armchair,
+  Boxes,
+  Hammer,
+  Lamp,
+  Layers,
+  Package,
+  Palette,
+  Receipt,
+  Shirt,
+  Sofa,
+  Tag,
+  TreePine,
+  Utensils,
+  Wallet,
+  Warehouse,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import { CurrencyText } from '@/components/data-display/CurrencyText'
 import { cn } from '@/lib/utils'
+import { getAvatarColor } from '@/lib/avatar'
 import type { Product, ProductType } from '@/types/product'
 
 type FilterValue = 'all' | ProductType
@@ -17,59 +36,103 @@ const FILTERS: { value: FilterValue; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'goods', label: 'Goods' },
   { value: 'service', label: 'Services' },
-  { value: 'combo', label: 'Combos' },
 ]
 
-function ProductCard({ product }: { product: Product }) {
+const CATEGORY_ICONS: { keywords: string[]; icon: LucideIcon }[] = [
+  { keywords: ['sofa', 'couch'], icon: Sofa },
+  { keywords: ['chair', 'seat', 'furniture'], icon: Armchair },
+  { keywords: ['light', 'lamp'], icon: Lamp },
+  { keywords: ['storage', 'warehouse'], icon: Warehouse },
+  { keywords: ['raw material', 'wood', 'timber', 'lumber'], icon: TreePine },
+  { keywords: ['decor', 'paint'], icon: Palette },
+  { keywords: ['hardware', 'tool'], icon: Hammer },
+  { keywords: ['fabric', 'textile', 'upholstery', 'cushion'], icon: Shirt },
+  { keywords: ['kitchen', 'dining'], icon: Utensils },
+  { keywords: ['box', 'packag'], icon: Boxes },
+]
+
+function getCategoryIcon(product: Product): LucideIcon {
+  const category = product.category?.toLowerCase() ?? ''
+  const match = CATEGORY_ICONS.find(({ keywords }) => keywords.some((keyword) => category.includes(keyword)))
+  if (match) return match.icon
+  if (product.type === 'service') return Wrench
+  if (product.type === 'combo') return Layers
+  return Package
+}
+
+function InfoRow({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-foreground/20 hover:bg-muted/30">
-      <div className="flex items-center gap-3">
-        {product.imageUrl ? (
-          <img
-            src={product.imageUrl}
-            alt=""
-            className="size-9 shrink-0 rounded-md object-cover"
-          />
-        ) : (
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-            <Package className="size-4" />
-          </div>
-        )}
-
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{product.name}</p>
-          <p className="text-xs text-muted-foreground">{TYPE_LABELS[product.type]}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-1.5 border-t border-border/60 pt-3 text-sm text-foreground">
-        <div className="flex items-center gap-2">
-          <Tag className="size-3.5 shrink-0 text-muted-foreground" />
-          <span className="truncate">{product.category || '—'}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Wallet className="size-3.5 shrink-0 text-muted-foreground" />
-          <span>
-            Sales <CurrencyText amount={product.salesPrice} />
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Receipt className="size-3.5 shrink-0 text-muted-foreground" />
-          <span>
-            Cost <CurrencyText amount={product.cost} />
-          </span>
-        </div>
-      </div>
+    <div className="flex items-center gap-2.5">
+      <Icon className="size-3.5 shrink-0 text-muted-foreground/70" />
+      <span className="truncate">{children}</span>
     </div>
   )
 }
 
-export function ProductKanbanView({ products }: { products: Product[] }) {
+function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
+  const CategoryIcon = getCategoryIcon(product)
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex flex-col justify-between rounded-xl border border-border/60 bg-card p-5 text-left transition-all duration-200 hover:border-primary/30 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-primary/5"
+    >
+      <div className="flex w-full items-start justify-between gap-4">
+        <div className="flex items-center gap-3.5 min-w-0">
+          {product.imageUrl ? (
+            <img
+              src={product.imageUrl}
+              alt=""
+              className="size-10 shrink-0 rounded-full object-cover ring-1 ring-border/50"
+            />
+          ) : (
+            <div
+              className={cn(
+                'flex size-10 shrink-0 items-center justify-center rounded-full ring-1 ring-border/50',
+                getAvatarColor(product.name),
+              )}
+            >
+              <CategoryIcon className="size-4" />
+            </div>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-medium leading-none text-foreground">{product.name}</h3>
+            <p className="mt-1.5 truncate text-xs text-muted-foreground">
+              {TYPE_LABELS[product.type]} • <span className="font-mono text-muted-foreground/70">#{String(product.id).padStart(4, '0')}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-2.5 text-xs text-muted-foreground">
+        <InfoRow icon={Tag}>{product.category || '—'}</InfoRow>
+        <InfoRow icon={Wallet}>
+          Sales <CurrencyText amount={product.salesPrice} />
+        </InfoRow>
+        <InfoRow icon={Receipt}>
+          Cost <CurrencyText amount={product.cost} />
+        </InfoRow>
+      </div>
+    </button>
+  )
+}
+
+export function ProductKanbanView({
+  products,
+  onSelect,
+}: {
+  products: Product[]
+  onSelect: (product: Product) => void
+}) {
   const [filter, setFilter] = useState<FilterValue>('all')
 
   const counts = useMemo(() => {
-    const result: Record<FilterValue, number> = { all: products.length, goods: 0, service: 0, combo: 0 }
-    for (const product of products) result[product.type]++
+    const result: Record<FilterValue, number> = { all: products.length, goods: 0, service: 0 }
+    for (const product of products) {
+      if (product.type === 'goods' || product.type === 'service') result[product.type]++
+    }
     return result
   }, [products])
 
@@ -77,7 +140,7 @@ export function ProductKanbanView({ products }: { products: Product[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="inline-flex w-fit items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
+      <div className="flex flex-wrap items-center gap-2">
         {FILTERS.map(({ value, label }) => {
           const isActive = filter === value
           return (
@@ -87,17 +150,19 @@ export function ProductKanbanView({ products }: { products: Product[] }) {
               onClick={() => setFilter(value)}
               aria-pressed={isActive}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium transition-colors',
+                'inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 isActive
-                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'bg-background border border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
               {label}
               <span
                 className={cn(
-                  'rounded-full px-1.5 py-0.5 text-xs leading-none',
-                  isActive ? 'bg-muted text-muted-foreground' : 'bg-muted/70 text-muted-foreground'
+                  'ml-2.5 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold',
+                  isActive 
+                    ? 'bg-primary-foreground/20 text-primary-foreground' 
+                    : 'bg-muted-foreground/10 text-muted-foreground'
                 )}
               >
                 {counts[value]}
@@ -115,7 +180,7 @@ export function ProductKanbanView({ products }: { products: Product[] }) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visibleProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} onClick={() => onSelect(product)} />
           ))}
         </div>
       )}

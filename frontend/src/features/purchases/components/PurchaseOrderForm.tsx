@@ -38,7 +38,8 @@ export function PurchaseOrderForm({
   const { data: contacts } = useContacts()
   const { data: products } = useProducts()
   const { data: accounts } = useAccounts()
-  const { data: analyticAccounts } = useAnalyticAccounts()
+  const { data: allAnalyticAccounts } = useAnalyticAccounts()
+  const analyticAccounts = allAnalyticAccounts?.filter((account) => account.type === 'expense')
   const vendors = contacts?.filter((c) => c.type === 'vendor' || c.type === 'both') ?? []
 
   const form = useForm<PurchaseOrderFormValues>({

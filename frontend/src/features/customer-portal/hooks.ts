@@ -1,10 +1,21 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { customerPortalApi } from './api'
 import { portalInvoiceKeys } from './query-keys'
 import { useAuth } from '@/features/auth/useAuth'
 import { toBackendRole } from '@/features/auth/roles'
-import { isInvoicePaidLocally } from '@/features/payments/mock-payment-store'
+import { getLocalPaidPayments, isInvoicePaidLocally } from '@/features/payments/mock-payment-store'
 import type { CustomerInvoice } from '@/types/sales'
+
+export interface PortalPaymentRow {
+  key: string
+  paymentDate: string
+  invoiceId: number
+  invoiceNumber: string | null
+  amount: number
+  method: string
+  reference: string | null
+}
 
 const POLL_INTERVAL_MS = 15_000
 
@@ -30,6 +41,55 @@ export function usePortalInvoices() {
     structuralSharing: false,
     select: (invoices) => invoices.map(withLocalPaidOverlay),
   })
+}
+
+/**
+ * Merges real backend-confirmed payments (embedded on each invoice) with invoices only
+ * "paid" through the mock UPI flow (see mock-payment-store.ts), so the customer's payment
+ * history reflects both without duplicating an invoice that eventually gets a real payment
+ * recorded against it too.
+ */
+export function usePortalPaymentHistory() {
+  const invoicesQuery = usePortalInvoices()
+
+  const rows = useMemo<PortalPaymentRow[]>(() => {
+    const invoices = invoicesQuery.data ?? []
+    const rows: PortalPaymentRow[] = []
+
+    for (const invoice of invoices) {
+      for (const payment of invoice.payments) {
+        if (payment.status !== 'confirmed') continue
+        rows.push({
+          key: `server-${payment.id}`,
+          paymentDate: payment.paymentDate,
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          amount: payment.amount,
+          method: payment.method === 'bank' ? 'Bank Transfer' : 'Cash',
+          reference: payment.reference,
+        })
+      }
+    }
+
+    const invoicesById = new Map(invoices.map((invoice) => [invoice.id, invoice]))
+    for (const mock of getLocalPaidPayments()) {
+      const invoice = invoicesById.get(mock.invoiceId)
+      if (!invoice || invoice.payments.some((p) => p.status === 'confirmed')) continue
+      rows.push({
+        key: `mock-${mock.invoiceId}`,
+        paymentDate: mock.paidAt,
+        invoiceId: mock.invoiceId,
+        invoiceNumber: invoice.invoiceNumber,
+        amount: mock.amount,
+        method: 'UPI',
+        reference: mock.reference,
+      })
+    }
+
+    return rows.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())
+  }, [invoicesQuery.data])
+
+  return { rows, isLoading: invoicesQuery.isLoading, isError: invoicesQuery.isError }
 }
 
 export function usePortalInvoice(id: number) {

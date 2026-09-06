@@ -49,7 +49,7 @@ export interface CustomerInvoiceDto {
   payments: PaymentDto[]
 }
 
-interface PaymentDto {
+export interface PaymentDto {
   id: number
   payment_number: string | null
   payment_date: string
@@ -77,7 +77,7 @@ function fromLineDto(dto: LineDto): SalesOrderLine | CustomerInvoiceLine {
   }
 }
 
-function fromPaymentDto(dto: PaymentDto): Payment {
+export function fromPaymentDto(dto: PaymentDto): Payment {
   return {
     id: dto.id,
     paymentNumber: dto.payment_number,
@@ -143,7 +143,7 @@ function toCreateDto(input: SalesOrderInput) {
   }
 }
 
-function toPaymentDto(input: CustomerPaymentInput) {
+export function toPaymentDto(input: CustomerPaymentInput) {
   return {
     method: input.method,
     amount: input.amount ?? null,

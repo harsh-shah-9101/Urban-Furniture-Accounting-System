@@ -1,38 +1,53 @@
 /**
- * Tracks invoices "paid" through the mock UPI flow (see mock-payment.ts for why it can't
- * write this back to the backend). Persisted to localStorage — scoped to this browser only,
- * not shared with the backend or other sessions/devices — so the customer keeps seeing
- * "Paid" for invoices they've simulated payment on, even across polling refetches or a
- * page reload, without the real "posted" status from the server flipping it back.
+ * Fallback only: the mock UPI flow (see mock-payment.ts and hooks.ts) now records a real
+ * payment on the backend once the simulated wait completes. This local flag only kicks in
+ * when that call fails — e.g. the backend hasn't rolled out the customer-portal pay route yet
+ * — so the customer still sees "Paid" and the payment in their history in this browser,
+ * rather than the flow silently doing nothing.
  */
+
+export interface MockPaymentRecord {
+  invoiceId: number
+  amount: number
+  reference: string
+  paidAt: string
+}
 
 const STORAGE_KEY = 'ufa:mock-paid-invoices'
 
-function readIds(): Set<number> {
+function readRecords(): MockPaymentRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     const parsed: unknown = raw ? JSON.parse(raw) : []
-    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is number => typeof id === 'number') : [])
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (item): item is MockPaymentRecord =>
+        !!item && typeof item === 'object' && typeof (item as MockPaymentRecord).invoiceId === 'number'
+    )
   } catch {
-    return new Set()
+    return []
   }
 }
 
-function writeIds(ids: Set<number>) {
+function writeRecords(records: MockPaymentRecord[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
   } catch {
-    // Best-effort only — a private window or blocked storage just means the badge
+    // Best-effort only — a private window or blocked storage just means the badge/history
     // won't persist across reloads, which is a harmless degradation here.
   }
 }
 
-export function markInvoicePaidLocally(invoiceId: number) {
-  const ids = readIds()
-  ids.add(invoiceId)
-  writeIds(ids)
+export function markInvoicePaidLocally(invoiceId: number, amount: number, reference: string) {
+  const records = readRecords().filter((r) => r.invoiceId !== invoiceId)
+  records.push({ invoiceId, amount, reference, paidAt: new Date().toISOString() })
+  writeRecords(records)
 }
 
 export function isInvoicePaidLocally(invoiceId: number): boolean {
-  return readIds().has(invoiceId)
+  return readRecords().some((r) => r.invoiceId === invoiceId)
+}
+
+export function getLocalPaidPayments(): MockPaymentRecord[] {
+  return readRecords()
 }

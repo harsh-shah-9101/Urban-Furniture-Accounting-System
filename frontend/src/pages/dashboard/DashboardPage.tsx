@@ -29,7 +29,6 @@ import { usePurchaseOrders } from '@/features/purchases/hooks'
 import { useBudgets } from '@/features/budgets/budgets/hooks'
 import { useJournalEntries } from '@/features/journal-entries/hooks'
 import { useJournals } from '@/features/journals/hooks'
-import { SalesVsPurchasesChart } from '@/components/charts/SalesVsPurchasesChart'
 
 const ACCENTS = {
   slate: 'bg-slate-500/10 text-slate-700 dark:text-slate-300',
@@ -134,24 +133,12 @@ export function DashboardPage() {
 
   const budgetStats = {
     total: budgets?.length ?? 0,
-    active: budgets?.filter((b) => !b.archived).length ?? 0,
-    archived: budgets?.filter((b) => b.archived).length ?? 0,
+    confirmed: budgets?.filter((b) => b.status === 'confirmed').length ?? 0,
+    draft: budgets?.filter((b) => b.status === 'draft').length ?? 0,
   }
 
-  const recentEntries = journalEntries ? [...journalEntries].slice(-5).reverse() : []
+  const recentEntries = journalEntries ? [...journalEntries].slice(-10).reverse() : []
 
-  const currentSales = salesOrders?.reduce((sum, order) => sum + order.totalAmount, 0) || 0
-  const currentPurchases = purchaseOrders?.reduce((sum, order) => sum + order.totalAmount, 0) || 0
-
-  // Generate a realistic looking 6-month trend for the chart
-  const chartData = [
-    { name: 'Apr', sales: Math.max(12000, currentSales * 0.4), purchases: Math.max(8000, currentPurchases * 0.5) },
-    { name: 'May', sales: Math.max(15000, currentSales * 0.6), purchases: Math.max(9000, currentPurchases * 0.6) },
-    { name: 'Jun', sales: Math.max(18000, currentSales * 0.8), purchases: Math.max(12000, currentPurchases * 0.7) },
-    { name: 'Jul', sales: Math.max(14000, currentSales * 0.5), purchases: Math.max(15000, currentPurchases * 0.9) },
-    { name: 'Aug', sales: Math.max(22000, currentSales * 0.9), purchases: Math.max(11000, currentPurchases * 0.6) },
-    { name: 'Sep', sales: currentSales || 25000, purchases: currentPurchases || 13000 },
-  ]
 
   return (
     <div>
@@ -227,15 +214,12 @@ export function DashboardPage() {
               />
               <CardContent className="grid grid-cols-3 gap-2">
                 <StatTile label="Total" value={budgetStats.total} />
-                <StatTile label="Active" value={budgetStats.active} />
-                <StatTile label="Archived" value={budgetStats.archived} />
+                <StatTile label="Confirmed" value={budgetStats.confirmed} />
+                <StatTile label="Draft" value={budgetStats.draft} />
               </CardContent>
             </Card>
           </div>
 
-          <div className="mt-4">
-            <SalesVsPurchasesChart data={chartData} />
-          </div>
 
           <Card className="mt-4">
             <ModuleCardHeader

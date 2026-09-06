@@ -26,7 +26,7 @@ export function PayInvoiceDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const order = useMemo(() => buildMockUpiOrder(invoiceId, amount), [invoiceId, amount])
-  const simulate = useSimulateInvoicePayment(invoiceId)
+  const simulate = useSimulateInvoicePayment(invoiceId, amount, order.referenceId)
 
   useEffect(() => {
     if (open) simulate.mutate()

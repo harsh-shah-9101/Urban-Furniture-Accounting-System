@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost, roleHeaders } from '@/lib/http'
 import type { BackendUserRole } from '@/types/auth'
 import type { AnalyticAccount, AnalyticAccountInput, AnalyticAccountUpdateInput } from '@/types/accounting'
+import { getAnalyticAccountType, setAnalyticAccountType } from './type-overlay'
 
 interface AnalyticAccountDto {
   id: number
@@ -15,6 +16,7 @@ function fromDto(dto: AnalyticAccountDto): AnalyticAccount {
     id: dto.id,
     name: dto.name,
     code: dto.code,
+    type: getAnalyticAccountType(dto.id),
     description: dto.description,
     archived: dto.archived,
   }
@@ -47,10 +49,12 @@ export const analyticAccountsApi = {
   },
   create: async (input: AnalyticAccountInput, role?: BackendUserRole) => {
     const dto = await apiPost<AnalyticAccountDto>('/analytic-accounts', toDto(input), roleHeaders(role))
+    setAnalyticAccountType(dto.id, input.type)
     return fromDto(dto)
   },
   update: async (id: number, input: AnalyticAccountUpdateInput, role?: BackendUserRole) => {
     const dto = await apiPatch<AnalyticAccountDto>(`/analytic-accounts/${id}`, toUpdateDto(input), roleHeaders(role))
+    if (input.type !== undefined) setAnalyticAccountType(id, input.type)
     return fromDto(dto)
   },
   remove: async (id: number, role?: BackendUserRole) => {

@@ -46,10 +46,13 @@ export interface JournalEntry {
   lines: JournalEntryLine[]
 }
 
+export type AnalyticAccountType = 'income' | 'expense'
+
 export interface AnalyticAccount {
   id: number
   name: string
   code: string
+  type: AnalyticAccountType
   description: string | null
   archived: boolean
 }

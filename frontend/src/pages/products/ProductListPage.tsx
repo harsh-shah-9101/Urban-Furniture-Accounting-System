@@ -201,7 +201,7 @@ export function ProductListPage() {
               hideSearchInput
             />
           ) : (
-            <ProductKanbanView products={filteredProducts} />
+            <ProductKanbanView products={filteredProducts} onSelect={setEditingProduct} />
           )}
         </div>
       )}
