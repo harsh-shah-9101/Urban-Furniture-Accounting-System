@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog'
 import { StatusBadge } from '@/components/data-display/StatusBadge'
 import { DocumentView } from '@/components/data-display/DocumentView'
 import { Button } from '@/components/ui/button'
-import { Printer, ShoppingBag, Send, FileText } from 'lucide-react'
+import { Printer, ShoppingBag, Send, FileText, XCircle } from 'lucide-react'
+import { formatDate } from '@/lib/formatters'
 import {
+  useCancelSalesOrder,
   useConfirmSalesOrder,
   useCreateInvoiceFromSalesOrder,
   useSalesOrder,
@@ -14,15 +18,15 @@ import {
 import { useContacts } from '@/features/contacts/hooks'
 import { useProducts } from '@/features/products/hooks'
 
-
-
 function SalesOrderDetail({ id }: { id: number }) {
   const navigate = useNavigate()
   const { data: order, isLoading, isError } = useSalesOrder(id)
   const { data: contacts } = useContacts()
   const { data: products } = useProducts()
   const confirmOrder = useConfirmSalesOrder(id)
+  const cancelOrder = useCancelSalesOrder(id)
   const createInvoice = useCreateInvoiceFromSalesOrder(id)
+  const [isCancelOpen, setIsCancelOpen] = useState(false)
 
   if (isLoading) return <LoadingState rows={4} />
   if (isError || !order) return <ErrorState message="Sales order not found." />
@@ -64,6 +68,12 @@ function SalesOrderDetail({ id }: { id: number }) {
                   {createInvoice.isPending ? 'Creating Invoice...' : 'Create Customer Invoice'}
                 </Button>
               )}
+              {(order.status === 'draft' || order.status === 'confirmed') && (
+                <Button variant="destructive" onClick={() => setIsCancelOpen(true)}>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+              )}
             </div>
           }
         />
@@ -76,7 +86,8 @@ function SalesOrderDetail({ id }: { id: number }) {
           reference={order.notes ? <p className="italic">"{order.notes}"</p> : undefined}
           status={<StatusBadge status={order.status} />}
           documentNoLabel="SO No."
-          documentNo={`SO-${order.id.toString().padStart(5, '0')}`}
+          documentNo={order.soNumber ?? `SO-${order.id.toString().padStart(5, '0')}`}
+          meta={[{ label: 'Order Date', value: formatDate(order.orderDate) }]}
           leftParty={{
             label: 'Order For',
             name: customerName,
@@ -103,6 +114,16 @@ function SalesOrderDetail({ id }: { id: number }) {
           totalAmount={order.totalAmount}
         />
       </div>
+
+      <ConfirmDialog
+        open={isCancelOpen}
+        onOpenChange={setIsCancelOpen}
+        title="Cancel this sales order?"
+        description="This can't be undone."
+        confirmLabel="Cancel Order"
+        destructive
+        onConfirm={() => cancelOrder.mutate()}
+      />
     </div>
   )
 }

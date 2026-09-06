@@ -51,6 +51,19 @@ export function useConfirmSalesOrder(id: number) {
   })
 }
 
+export function useCancelSalesOrder(id: number) {
+  const role = useRole()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => salesOrdersApi.cancel(id, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: salesOrderKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: salesOrderKeys.detail(id) })
+      toast.success('Sales order cancelled')
+    },
+  })
+}
+
 export function useCreateInvoiceFromSalesOrder(id: number) {
   const role = useRole()
   const queryClient = useQueryClient()
@@ -91,6 +104,21 @@ export function usePostCustomerInvoice(id: number) {
       queryClient.invalidateQueries({ queryKey: portalInvoiceKeys.lists() })
       queryClient.invalidateQueries({ queryKey: portalInvoiceKeys.detail(id) })
       toast.success('Customer invoice posted')
+    },
+  })
+}
+
+export function useCancelCustomerInvoice(id: number) {
+  const role = useRole()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => customerInvoicesApi.cancel(id, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: customerInvoiceKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: customerInvoiceKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: portalInvoiceKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: portalInvoiceKeys.detail(id) })
+      toast.success('Customer invoice cancelled')
     },
   })
 }

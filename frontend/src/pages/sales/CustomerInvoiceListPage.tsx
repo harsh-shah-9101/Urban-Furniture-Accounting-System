@@ -8,6 +8,7 @@ import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
 import { useCustomerInvoices } from '@/features/sales/hooks'
 import { useContacts } from '@/features/contacts/hooks'
+import { formatDate } from '@/lib/formatters'
 import type { CustomerInvoice } from '@/types/sales'
 
 export function CustomerInvoiceListPage() {
@@ -18,9 +19,18 @@ export function CustomerInvoiceListPage() {
   const customerName = (customerId: number) => contacts?.find((c) => c.id === customerId)?.name ?? `Customer ${customerId}`
 
   const columns: ColumnDef<CustomerInvoice, unknown>[] = [
-    { id: 'id', header: 'Invoice', cell: ({ row }) => `${row.original.id}` },
+    {
+      id: 'invoiceNumber',
+      header: 'Invoice',
+      cell: ({ row }) => row.original.invoiceNumber ?? `INV-${row.original.id.toString().padStart(5, '0')}`,
+    },
     { id: 'customer', header: 'Customer', cell: ({ row }) => customerName(row.original.customerId) },
     { id: 'so', header: 'Sales Order', cell: ({ row }) => `${row.original.salesOrderId}` },
+    {
+      id: 'invoiceDate',
+      header: 'Date',
+      cell: ({ row }) => formatDate(row.original.invoiceDate),
+    },
     {
       accessorKey: 'status',
       header: 'Status',
@@ -30,6 +40,11 @@ export function CustomerInvoiceListPage() {
       accessorKey: 'totalAmount',
       header: 'Total',
       cell: ({ row }) => <CurrencyText amount={row.original.totalAmount} />,
+    },
+    {
+      accessorKey: 'amountDue',
+      header: 'Due',
+      cell: ({ row }) => <CurrencyText amount={row.original.amountDue} />,
     },
   ]
 

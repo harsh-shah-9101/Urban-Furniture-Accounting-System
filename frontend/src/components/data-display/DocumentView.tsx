@@ -18,6 +18,17 @@ export interface DocumentParty {
   details: React.ReactNode
 }
 
+export interface DocumentMetaItem {
+  label: string
+  value: React.ReactNode
+}
+
+export interface DocumentTotalRow {
+  label: string
+  amount: number
+  className?: string
+}
+
 export interface DocumentViewProps {
   title: string
   icon: LucideIcon
@@ -25,10 +36,14 @@ export interface DocumentViewProps {
   status: React.ReactNode
   documentNoLabel: string
   documentNo: string
+  /** Extra header fields shown under the document number, e.g. dates. */
+  meta?: DocumentMetaItem[]
   leftParty: DocumentParty
   rightParty: DocumentParty
   lines: DocumentLine[]
   totalAmount: number
+  /** Extra rows shown above the total, e.g. paid via cash/bank, amount due. */
+  extraTotals?: DocumentTotalRow[]
 }
 
 export function DocumentView({
@@ -38,10 +53,12 @@ export function DocumentView({
   status,
   documentNoLabel,
   documentNo,
+  meta,
   leftParty,
   rightParty,
   lines,
   totalAmount,
+  extraTotals,
 }: DocumentViewProps) {
   return (
     <Card className="overflow-hidden border-border/50 shadow-sm transition-all hover:shadow-md print:border-none print:shadow-none">
@@ -60,6 +77,16 @@ export function DocumentView({
               <p className="text-sm font-medium text-muted-foreground">{documentNoLabel}</p>
               <p className="font-mono text-lg font-semibold">{documentNo}</p>
             </div>
+            {meta && meta.length > 0 && (
+              <div className="flex flex-col items-end gap-0.5 text-sm">
+                {meta.map((item) => (
+                  <div key={item.label} className="flex items-center gap-2">
+                    <span className="text-muted-foreground">{item.label}:</span>
+                    <span className="font-medium">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -114,6 +141,16 @@ export function DocumentView({
               <span>Total Amount</span>
               <CurrencyText amount={totalAmount} className="text-xl text-primary" />
             </div>
+            {extraTotals && extraTotals.length > 0 && (
+              <div className="mt-3 flex flex-col gap-1.5 border-t border-border/50 pt-3">
+                {extraTotals.map((row) => (
+                  <div key={row.label} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <CurrencyText amount={row.amount} className={row.className} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

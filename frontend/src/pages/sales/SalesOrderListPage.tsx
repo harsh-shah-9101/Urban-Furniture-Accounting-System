@@ -18,6 +18,7 @@ import { Plus } from 'lucide-react'
 import { useSalesOrders, useCreateSalesOrder } from '@/features/sales/hooks'
 import { useContacts } from '@/features/contacts/hooks'
 import { SalesOrderForm } from '@/features/sales/components/SalesOrderForm'
+import { formatDate } from '@/lib/formatters'
 import type { SalesOrder } from '@/types/sales'
 import type { SalesOrderFormValues } from '@/features/sales/schema'
 import { useState } from 'react'
@@ -44,8 +45,17 @@ export function SalesOrderListPage() {
   const customerName = (customerId: number) => contacts?.find((c) => c.id === customerId)?.name ?? `Customer ${customerId}`
 
   const columns: ColumnDef<SalesOrder, unknown>[] = [
-    { id: 'id', header: 'SO', cell: ({ row }) => `${row.original.id}` },
+    {
+      id: 'soNumber',
+      header: 'SO',
+      cell: ({ row }) => row.original.soNumber ?? `SO-${row.original.id.toString().padStart(5, '0')}`,
+    },
     { id: 'customer', header: 'Customer', cell: ({ row }) => customerName(row.original.customerId) },
+    {
+      id: 'orderDate',
+      header: 'Date',
+      cell: ({ row }) => formatDate(row.original.orderDate),
+    },
     {
       accessorKey: 'status',
       header: 'Status',

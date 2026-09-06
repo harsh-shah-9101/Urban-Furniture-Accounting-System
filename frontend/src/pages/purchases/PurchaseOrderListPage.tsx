@@ -18,6 +18,7 @@ import { Plus } from 'lucide-react'
 import { usePurchaseOrders, useCreatePurchaseOrder } from '@/features/purchases/hooks'
 import { useContacts } from '@/features/contacts/hooks'
 import { PurchaseOrderForm } from '@/features/purchases/components/PurchaseOrderForm'
+import { formatDate } from '@/lib/formatters'
 import type { PurchaseOrder } from '@/types/purchases'
 import type { PurchaseOrderFormValues } from '@/features/purchases/schema'
 import { useState } from 'react'
@@ -44,8 +45,17 @@ export function PurchaseOrderListPage() {
   const vendorName = (vendorId: number) => contacts?.find((c) => c.id === vendorId)?.name ?? `Vendor ${vendorId}`
 
   const columns: ColumnDef<PurchaseOrder, unknown>[] = [
-    { id: 'id', header: 'PO', cell: ({ row }) => `${row.original.id}` },
+    {
+      id: 'poNumber',
+      header: 'PO',
+      cell: ({ row }) => row.original.poNumber ?? `PO-${row.original.id.toString().padStart(5, '0')}`,
+    },
     { id: 'vendor', header: 'Vendor', cell: ({ row }) => vendorName(row.original.vendorId) },
+    {
+      id: 'orderDate',
+      header: 'Date',
+      cell: ({ row }) => formatDate(row.original.orderDate),
+    },
     {
       accessorKey: 'status',
       header: 'Status',

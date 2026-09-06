@@ -4,7 +4,7 @@ import { purchaseOrdersApi, vendorBillsApi } from './api'
 import { purchaseOrderKeys, vendorBillKeys } from './query-keys'
 import { useAuth } from '@/features/auth/useAuth'
 import { toBackendRole } from '@/features/auth/roles'
-import type { BillPaymentInput, PurchaseOrderInput } from '@/types/purchases'
+import type { BillPaymentInput, PurchaseOrderInput, VendorBillDatesInput } from '@/types/purchases'
 
 function useRole() {
   const { user } = useAuth()
@@ -50,6 +50,19 @@ export function useConfirmPurchaseOrder(id: number) {
   })
 }
 
+export function useCancelPurchaseOrder(id: number) {
+  const role = useRole()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => purchaseOrdersApi.cancel(id, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.detail(id) })
+      toast.success('Purchase order cancelled')
+    },
+  })
+}
+
 export function useCreateBillFromPurchaseOrder(id: number) {
   const role = useRole()
   const queryClient = useQueryClient()
@@ -91,6 +104,19 @@ export function usePostVendorBill(id: number) {
   })
 }
 
+export function useCancelVendorBill(id: number) {
+  const role = useRole()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => vendorBillsApi.cancel(id, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: vendorBillKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: vendorBillKeys.detail(id) })
+      toast.success('Vendor bill cancelled')
+    },
+  })
+}
+
 export function usePayVendorBill(id: number) {
   const role = useRole()
   const queryClient = useQueryClient()
@@ -104,3 +130,15 @@ export function usePayVendorBill(id: number) {
   })
 }
 
+export function useUpdateVendorBillDates(id: number) {
+  const role = useRole()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: VendorBillDatesInput) => vendorBillsApi.updateDates(id, input, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: vendorBillKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: vendorBillKeys.detail(id) })
+      toast.success('Bill details updated')
+    },
+  })
+}

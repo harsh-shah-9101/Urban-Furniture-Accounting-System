@@ -1,12 +1,16 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LoadingState } from '@/components/feedback/LoadingState'
 import { ErrorState } from '@/components/feedback/ErrorState'
+import { ConfirmDialog } from '@/components/feedback/ConfirmDialog'
 import { StatusBadge } from '@/components/data-display/StatusBadge'
 import { DocumentView } from '@/components/data-display/DocumentView'
 import { Button } from '@/components/ui/button'
-import { Printer, ShoppingCart, Send, FileText } from 'lucide-react'
+import { Printer, ShoppingCart, Send, FileText, XCircle } from 'lucide-react'
+import { formatDate } from '@/lib/formatters'
 import {
+  useCancelPurchaseOrder,
   useConfirmPurchaseOrder,
   useCreateBillFromPurchaseOrder,
   usePurchaseOrder,
@@ -14,15 +18,15 @@ import {
 import { useContacts } from '@/features/contacts/hooks'
 import { useProducts } from '@/features/products/hooks'
 
-
-
 function PurchaseOrderDetail({ id }: { id: number }) {
   const navigate = useNavigate()
   const { data: order, isLoading, isError } = usePurchaseOrder(id)
   const { data: contacts } = useContacts()
   const { data: products } = useProducts()
   const confirmOrder = useConfirmPurchaseOrder(id)
+  const cancelOrder = useCancelPurchaseOrder(id)
   const createBill = useCreateBillFromPurchaseOrder(id)
+  const [isCancelOpen, setIsCancelOpen] = useState(false)
 
   if (isLoading) return <LoadingState rows={4} />
   if (isError || !order) return <ErrorState message="Purchase order not found." />
@@ -64,6 +68,12 @@ function PurchaseOrderDetail({ id }: { id: number }) {
                   {createBill.isPending ? 'Creating Bill...' : 'Create Vendor Bill'}
                 </Button>
               )}
+              {(order.status === 'draft' || order.status === 'confirmed') && (
+                <Button variant="destructive" onClick={() => setIsCancelOpen(true)}>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+              )}
             </div>
           }
         />
@@ -76,7 +86,8 @@ function PurchaseOrderDetail({ id }: { id: number }) {
           reference={order.notes ? <p className="italic">"{order.notes}"</p> : undefined}
           status={<StatusBadge status={order.status} />}
           documentNoLabel="PO No."
-          documentNo={`PO-${order.id.toString().padStart(5, '0')}`}
+          documentNo={order.poNumber ?? `PO-${order.id.toString().padStart(5, '0')}`}
+          meta={[{ label: 'Order Date', value: formatDate(order.orderDate) }]}
           leftParty={{
             label: 'Order From',
             name: vendorName,
@@ -103,6 +114,16 @@ function PurchaseOrderDetail({ id }: { id: number }) {
           totalAmount={order.totalAmount}
         />
       </div>
+
+      <ConfirmDialog
+        open={isCancelOpen}
+        onOpenChange={setIsCancelOpen}
+        title="Cancel this purchase order?"
+        description="This can't be undone."
+        confirmLabel="Cancel Order"
+        destructive
+        onConfirm={() => cancelOrder.mutate()}
+      />
     </div>
   )
 }
