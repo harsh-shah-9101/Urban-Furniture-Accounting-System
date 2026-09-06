@@ -87,12 +87,27 @@ PostgreSQL connection inside pgAdmin:
 - Auth: `/auth/signup`, `/auth/login`
 - Master data: `/contacts`, `/products`, `/accounts`, `/journals`
 - Purchase: `/purchase-orders`, `/purchase-orders/{id}/confirm`, `/purchase-orders/{id}/create-bill`
-- Vendor bills: `/vendor-bills`, `/vendor-bills/{id}/post`, `/vendor-bills/{id}/pay`
+- Vendor bills: `/vendor-bills`, `/vendor-bills/{id}/dates`, `/vendor-bills/{id}/post`, `/vendor-bills/{id}/pay`
 - Sales: `/sales-orders`, `/sales-orders/{id}/confirm`, `/sales-orders/{id}/create-invoice`
 - Customer invoices: `/customer-invoices`, `/customer-invoices/{id}/post`, `/customer-invoices/{id}/pay`
 - Customer portal: `/customer-portal/invoices`
 - Reports: `/reports/trial-balance`, `/reports/profit-loss`, `/reports/balance-sheet`, `/reports/budget`
 - Payment gateway: `/customer-invoices/{id}/razorpay-order`, `/payments/razorpay/verify`, `/payment-gateway/orders`
+
+## Razorpay Payment Flow
+
+## Vendor Bill Dates
+
+When converting a purchase order to a vendor bill, the date fields are optional. If the frontend sends no body, `invoice_date` is set automatically and `due_date` stays blank.
+
+```json
+{
+  "invoice_date": "2026-09-05T00:00:00",
+  "due_date": "2026-09-15T00:00:00"
+}
+```
+
+Draft vendor bill dates can also be edited with `PATCH /vendor-bills/{bill_id}/dates` using the same body. The API rejects a due date earlier than the invoice date.
 
 ## Razorpay Payment Flow
 

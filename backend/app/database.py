@@ -23,3 +23,6 @@ def get_db() -> Generator[Session, None, None]:
 
 # cd "C:\Odoo Hackthon\Urban-Furniture-Accounting-System\backend"
 # .\.venv\Scripts\uvicorn.exe app.main:app --reload
+
+
+# "C:\cloudflared-windows-amd64.exe" tunnel --url http://localhost:8000
